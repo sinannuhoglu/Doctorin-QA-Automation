@@ -1,16 +1,19 @@
 package com.sinannuhoglu.pages.admission;
 
 import com.sinannuhoglu.core.DriverFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.TimeoutException;
 import org.testng.Assert;
 
 import java.text.Normalizer;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 
 /**
  * Hasta Arama modülü + Hasta Kabul akışında kullanılan Page Object:
@@ -21,8 +24,13 @@ import java.util.Locale;
  */
 public class AdmissionPatientSearchPage {
 
+    private static final Logger LOGGER = LogManager.getLogger(AdmissionPatientSearchPage.class);
+
     private final WebDriver driver;
     private final WebDriverWait wait;
+    private final Random random = new Random();
+
+    private String lastIdentityNo;
 
     public AdmissionPatientSearchPage() {
         this.driver = DriverFactory.getDriver();
@@ -31,17 +39,21 @@ public class AdmissionPatientSearchPage {
 
     // ================== LOCATORS ==================
 
-    // Yeni hasta ekleme / sidebar
     private final By newPatientButton     = By.cssSelector("button[data-testid='patient-add-new']");
     private final By admissionSidebarRoot = By.id("AdmissionSidebarId");
     private final By registrationForm     = By.id("admission-sidebar__registration-form");
 
-    // Hasta Arama ekranı toolbar / grid
     private final By detailedFilterButton = By.cssSelector("button[data-testid='detailed-filter-button']");
     private final By detailedFilterDialog = By.cssSelector("div[id^='modal-dialog'][class*='e-dlg-container']");
     private final By toolbarSearchInput   = By.cssSelector("input[name='search-input']");
     private final By gridRoot             = By.id("Grid");
     private final By gridRows             = By.cssSelector("#Grid tbody[role='rowgroup'] tr.e-row");
+
+    private final By globalLoadingOverlay = By.cssSelector("div.backdrop-blur-xs.z-20");
+
+    private final By duplicateIdentityToastLocator = By.xpath(
+            "//*[@id='toast_default']//*[contains(normalize-space(),'Bu kimlik numarasına sahip bir hasta var')]"
+    );
 
     // ================== NAVİGASYON ==================
 
@@ -60,6 +72,8 @@ public class AdmissionPatientSearchPage {
                 ExpectedConditions.visibilityOfElementLocated(toolbarSearchInput),
                 ExpectedConditions.visibilityOfElementLocated(gridRoot)
         ));
+
+        waitForLoadingOverlayToDisappear();
     }
 
     // ================== GENEL YARDIMCILAR ==================
@@ -84,6 +98,19 @@ public class AdmissionPatientSearchPage {
         }
         if (text != null) {
             input.sendKeys(text);
+        }
+    }
+
+    /**
+     * Ekranda global loading overlay (blur katman) varsa kaybolmasını bekler.
+     * Overlay hiç yoksa hemen devam eder.
+     */
+    private void waitForLoadingOverlayToDisappear() {
+        try {
+            WebDriverWait overlayWait = new WebDriverWait(driver, Duration.ofSeconds(20));
+            overlayWait.until(ExpectedConditions.invisibilityOfElementLocated(globalLoadingOverlay));
+        } catch (TimeoutException e) {
+            LOGGER.warn("Loading overlay beklenen sürede kaybolmadı, akışa devam ediliyor.", e);
         }
     }
 
@@ -143,88 +170,85 @@ public class AdmissionPatientSearchPage {
     private WebElement findGlobalFormGroupByLabel(String labelText) {
         WebDriverWait globalWait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
-        WebElement label = globalWait.until(
-                ExpectedConditions.visibilityOfElementLocated(
-                        By.xpath("//label[contains(@class,'e-form-label') and " +
-                                "contains(normalize-space(),'" + labelText + "')]")
-                )
+        String lower = labelText.toLowerCase(Locale.ROOT);
+
+        By strictLocator = By.xpath(
+                "//*[self::label or self::span]" +
+                        "[contains(@class,'e-form-label') or contains(@class,'e-float-text')]" +
+                        "[contains(" +
+                        " translate(normalize-space(), " +
+                        "  'ABCDEFGHIJKLMNOPQRSTUVWXYZÇĞİÖŞÜ', " +
+                        "  'abcdefghijklmnopqrstuvwxyzçğıöşü'" +
+                        " ), '" + lower + "')]"
         );
 
-        return label.findElement(
-                By.xpath("./ancestor::div[contains(@class,'e-form-group')][1]")
-        );
+        try {
+            WebElement label = globalWait.until(
+                    ExpectedConditions.visibilityOfElementLocated(strictLocator)
+            );
+
+            return label.findElement(
+                    By.xpath("./ancestor::div[" +
+                            " contains(@class,'e-form-group') or" +
+                            " contains(@class,'e-float-input') or" +
+                            " contains(@class,'e-control-wrapper')" +
+                            "][1]")
+            );
+        } catch (TimeoutException e) {
+            By fallbackLocator = By.xpath(
+                    "//*[self::label or self::span or self::div]" +
+                            "[contains(" +
+                            " translate(normalize-space(), " +
+                            "  'ABCDEFGHIJKLMNOPQRSTUVWXYZÇĞİÖŞÜ', " +
+                            "  'abcdefghijklmnopqrstuvwxyzçğıöşü'" +
+                            " ), '" + lower + "')]"
+            );
+
+            WebElement label = globalWait.until(
+                    ExpectedConditions.visibilityOfElementLocated(fallbackLocator)
+            );
+
+            return label.findElement(
+                    By.xpath("./ancestor::div[" +
+                            " contains(@class,'e-form-group') or" +
+                            " contains(@class,'e-float-input') or" +
+                            " contains(@class,'e-control-wrapper')" +
+                            "][1]")
+            );
+        }
     }
 
-    private void selectFromDropdown(By popupLocator, String value) {
-        int attempts = 0;
-        String target = value.trim();
-        String normalizedTarget = normalizeText(target);
+    /**
+     * Syncfusion DropDownList popup’ından item seçer.
+     * Önce verilen popupLocator ile dener, bulunamazsa generic popup locator ile fallback yapar.
+     */
+    private void selectFromDropdown(By popupLocator, String optionText) {
+        By genericPopupLocator = By.cssSelector(
+                "div.e-ddl.e-control.e-lib.e-popup.e-popup-open[role='dialog']"
+        );
 
-        while (attempts < 3) {
-            try {
-                WebElement popup = wait.until(
-                        ExpectedConditions.visibilityOfElementLocated(popupLocator)
-                );
+        WebElement popup;
 
-                List<WebElement> options = popup.findElements(By.cssSelector("ul li"));
-                boolean staleHit = false;
+        waitForLoadingOverlayToDisappear();
 
-                for (int i = 0; i < options.size(); i++) {
-                    WebElement opt = options.get(i);
+        try {
+            popup = new WebDriverWait(driver, Duration.ofSeconds(12))
+                    .until(ExpectedConditions.visibilityOfElementLocated(popupLocator));
+        } catch (TimeoutException ex) {
+            LOGGER.warn("Popup, özel locator ile bulunamadı: {}. Generic locator ile yeniden denenecek.", popupLocator);
 
-                    String text;
-                    String innerHtml;
-                    try {
-                        text = opt.getText();
-                        innerHtml = opt.getAttribute("innerHTML");
-                    } catch (StaleElementReferenceException e) {
-                        staleHit = true;
-                        break;
-                    }
+            waitForLoadingOverlayToDisappear();
 
-                    String candidate = (text != null && !text.trim().isEmpty())
-                            ? text.trim()
-                            : (innerHtml != null
-                            ? innerHtml.replaceAll("<[^>]*>", "").trim()
-                            : "");
-
-                    if (candidate.isEmpty()) {
-                        continue;
-                    }
-
-                    String normalizedOption = normalizeText(candidate);
-
-                    if (normalizedOption.equals(normalizedTarget) ||
-                            normalizedOption.contains(normalizedTarget)) {
-
-                        wait.until(ExpectedConditions.elementToBeClickable(opt)).click();
-                        return;
-                    }
-                }
-
-                if (staleHit) {
-                    attempts++;
-                    try {
-                        Thread.sleep(200);
-                    } catch (InterruptedException ignored) {}
-                    continue;
-                }
-
-                throw new NoSuchElementException(
-                        "Dropdown içinde '" + value + "' seçeneği bulunamadı."
-                );
-
-            } catch (StaleElementReferenceException e) {
-                attempts++;
-                try {
-                    Thread.sleep(200);
-                } catch (InterruptedException ignored) {}
-            }
+            popup = new WebDriverWait(driver, Duration.ofSeconds(8))
+                    .until(ExpectedConditions.visibilityOfElementLocated(genericPopupLocator));
         }
 
-        throw new NoSuchElementException(
-                "Dropdown içinde '" + value + "' seçeneği, birden fazla STALE denemesine rağmen bulunamadı."
-        );
+        String optionXpath = ".//li[normalize-space()='" + optionText + "']";
+        WebElement optionElement = popup.findElement(By.xpath(optionXpath));
+
+        scrollIntoView(optionElement);
+
+        optionElement.click();
     }
 
     private void waitForGridRowsToLoad() {
@@ -240,7 +264,12 @@ public class AdmissionPatientSearchPage {
     // ================== YENİ KAYIT (SIDEBAR) ==================
 
     public void openNewPatientForm() {
+        waitForLoadingOverlayToDisappear();
+
         clickNewPatientButtonSafely();
+
+        waitForLoadingOverlayToDisappear();
+
         wait.until(ExpectedConditions.visibilityOfElementLocated(admissionSidebarRoot));
         wait.until(ExpectedConditions.visibilityOfElementLocated(registrationForm));
     }
@@ -256,10 +285,17 @@ public class AdmissionPatientSearchPage {
                 return;
             } catch (ElementClickInterceptedException e) {
                 attempts++;
+                LOGGER.warn("Yeni hasta butonuna tıklanamadı, deneme: {}", attempts, e);
+                waitForLoadingOverlayToDisappear();
+
                 if (attempts == 3) {
                     WebElement button = driver.findElement(newPatientButton);
                     scrollIntoView(button);
                     ((JavascriptExecutor) driver).executeScript("arguments[0].click();", button);
+                } else {
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException ignored) {}
                 }
             }
         }
@@ -280,9 +316,42 @@ public class AdmissionPatientSearchPage {
     }
 
     public void setIdentityNumber(String identityNo) {
-        WebElement group = findFormGroupByLabel("Kimlik Numarası");
-        WebElement input = group.findElement(By.tagName("input"));
-        typeInto(input, identityNo);
+        this.lastIdentityNo = identityNo;
+
+        WebElement formRoot = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(registrationForm)
+        );
+
+        WebElement label = formRoot.findElement(By.xpath(
+                ".//label[contains(normalize-space(),'Kimlik Numarası')]"
+        ));
+
+        WebElement input = label.findElement(By.xpath(
+                "./following-sibling::span[1]//input[not(@type='hidden')]"
+        ));
+
+        scrollIntoView(input);
+
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        js.executeScript(
+                "var el = arguments[0]; var val = arguments[1];" +
+                        "if (el && el.ej2_instances && el.ej2_instances[0]) {" +
+                        "  el.ej2_instances[0].value = val;" +
+                        "} else {" +
+                        "  el.value = val;" +
+                        "}" +
+                        "el.dispatchEvent(new Event('input',  { bubbles:true }));" +
+                        "el.dispatchEvent(new Event('change', { bubbles:true }));",
+                input, identityNo
+        );
+
+        new WebDriverWait(driver, Duration.ofSeconds(3))
+                .until(d -> {
+                    String value = input.getAttribute("value");
+                    if (value == null) return false;
+                    String digits = value.replaceAll("\\D", "");
+                    return digits.length() == identityNo.length();
+                });
     }
 
     public void setFirstName(String firstName) {
@@ -367,69 +436,165 @@ public class AdmissionPatientSearchPage {
         typeInto(input, email);
     }
 
+    /**
+     * Kaydet sonrası:
+     *  - İlk adım kayıt formu kapanırsa: başarı (Kabul adımına geçilmiş demek).
+     *  - "Bu kimlik numarasına sahip bir hasta var" toast'ı çıkarsa:
+     *      + Kimlik numarasının son 2 hanesi random değiştirilir
+     *      + Tekrar Kaydet denemesi yapılır (max 3 deneme).
+     */
     public void clickSidebarSave() {
-        WebElement form = wait.until(
-                ExpectedConditions.visibilityOfElementLocated(registrationForm)
-        );
+        int attempts = 0;
 
-        WebElement saveButton = form.findElement(
+        while (attempts < 3) {
+            attempts++;
+
+            boolean clicked = clickSidebarSaveInternal();
+            if (!clicked) {
+                LOGGER.warn("Kayıt formu veya Kaydet butonu bulunamadı; muhtemelen zaten Kabul adımına geçildi. Adım atlanıyor.");
+                return;
+            }
+
+            try {
+                WebDriverWait postWait = new WebDriverWait(driver, Duration.ofSeconds(15));
+                postWait.until(d -> {
+                    boolean regFormClosed = !isRegistrationFormOpen();
+                    boolean duplicateToast = isDuplicateIdentityToastVisibleNow(d);
+                    return regFormClosed || duplicateToast;
+                });
+
+                boolean regFormClosed = !isRegistrationFormOpen();
+                boolean duplicateToast = isDuplicateIdentityToastVisibleNow(driver);
+
+                if (regFormClosed) {
+                    waitForLoadingOverlayToDisappear();
+                    return;
+                }
+
+                if (duplicateToast) {
+                    LOGGER.warn("Bu kimlik numarasına sahip bir hasta var uyarısı alındı. Yeni kimlik numarası deneniyor. Deneme: {}", attempts);
+                    changeIdentityLastTwoDigitsRandom();
+                    dismissDuplicateIdentityToastIfPossible();
+                    continue;
+                }
+
+            } catch (TimeoutException e) {
+                LOGGER.warn("Kayıt sonrası ne form kapandı ne de duplicate toast görüldü. Deneme: {}", attempts, e);
+                if (attempts >= 3) {
+                    throw e;
+                }
+            }
+        }
+
+        throw new RuntimeException("Hasta kaydı için benzersiz kimlik numarası üretilemedi (3 deneme).");
+    }
+
+    /**
+     * Sidebar içindeki Kaydet butonuna tıklar.
+     * Sidebar veya form ya da buton hiç bulunamazsa exception atmaz, false döner.
+     */
+    private boolean clickSidebarSaveInternal() {
+        waitForLoadingOverlayToDisappear();
+
+        List<WebElement> sidebars = driver.findElements(admissionSidebarRoot);
+        if (sidebars.isEmpty()) {
+            LOGGER.warn("Admission sidebar root (AdmissionSidebarId) bulunamadı; form muhtemelen kapalı.");
+            return false;
+        }
+
+        WebElement sidebar = sidebars.get(0);
+
+        WebElement container = sidebar;
+        try {
+            container = sidebar.findElement(By.id("admission-sidebar__registration-form"));
+        } catch (NoSuchElementException ex) {
+            LOGGER.warn("registrationForm id'li form bulunamadı; Kaydet butonu sidebar kökünden aranacak.");
+        }
+
+        List<WebElement> buttons = container.findElements(
                 By.xpath(".//button[@type='submit' and normalize-space()='Kaydet']")
         );
 
+        if (buttons.isEmpty()) {
+            LOGGER.warn("Sidebar içinde 'Kaydet' butonu bulunamadı.");
+            return false;
+        }
+
+        WebElement saveButton = buttons.get(0);
+
         scrollIntoView(saveButton);
-        wait.until(ExpectedConditions.elementToBeClickable(saveButton)).click();
+
+        new WebDriverWait(driver, Duration.ofSeconds(10))
+                .until(ExpectedConditions.elementToBeClickable(saveButton))
+                .click();
+
+        return true;
+    }
+
+    /**
+     * Sidebar açık mı? (AdmissionSidebarId görünür mü?)
+     */
+    private boolean isSidebarOpen() {
+        try {
+            List<WebElement> sidebars = driver.findElements(admissionSidebarRoot);
+            for (WebElement sb : sidebars) {
+                if (sb.isDisplayed()) {
+                    return true;
+                }
+            }
+        } catch (Exception ignored) {}
+        return false;
+    }
+
+    private boolean isDuplicateIdentityToastVisibleNow(WebDriver d) {
+        try {
+            List<WebElement> elements = d.findElements(duplicateIdentityToastLocator);
+            for (WebElement el : elements) {
+                if (el.isDisplayed()) {
+                    return true;
+                }
+            }
+        } catch (Exception ignored) {}
+        return false;
+    }
+
+    private void changeIdentityLastTwoDigitsRandom() {
+        if (lastIdentityNo == null || lastIdentityNo.length() < 2) {
+            LOGGER.warn("lastIdentityNo tanımlı değil, kimlik numarası güncellenemiyor.");
+            return;
+        }
+
+        String prefix = lastIdentityNo.substring(0, lastIdentityNo.length() - 2);
+        int suffix = random.nextInt(90) + 10; // 10-99
+        String newId = prefix + String.format("%02d", suffix);
+
+        LOGGER.info("Kimlik numarası çakıştığı için yeni kimlik numarası denenecek: {}", newId);
+        setIdentityNumber(newId);
+    }
+
+    private void dismissDuplicateIdentityToastIfPossible() {
+        try {
+            WebElement toast = driver.findElement(By.id("toast_default"));
+            WebElement closeBtn = toast.findElement(By.cssSelector("button[aria-label='Close']"));
+            closeBtn.click();
+        } catch (Exception ignored) {
+        }
     }
 
     // ================== KAYIT SONRASI HASTA KABUL EKRANI ==================
 
     public void selectVisitType(String visitType) {
         selectFromGlobalLabeledDropdown("Vizit Tipi", visitType);
-
-        // Vizit Tipi değiştiğinde, bağlı alanların yüklenmesi için kısa bekleme
-        try {
-            Thread.sleep(3000);
-        } catch (InterruptedException ignored) {}
     }
 
     public void selectDepartment(String departmentName) {
-        By popupLocator = By.cssSelector(
-                "div.e-ddl.e-control.e-lib.e-popup.e-popup-open[role='dialog']"
-        );
-
-        int attempts = 0;
-
-        while (attempts < 3) {
-            attempts++;
-
-            WebElement formGroup = findGlobalFormGroupByLabel("Departman");
-
-            WebElement dropdownIcon = formGroup.findElement(
-                    By.cssSelector("span.e-input-group-icon.e-ddl-icon")
-            );
-
-            wait.until(ExpectedConditions.elementToBeClickable(dropdownIcon));
-            scrollIntoView(dropdownIcon);
-            dropdownIcon.click();
-
-            try {
-                selectFromDropdown(popupLocator, departmentName);
-                return;
-            } catch (NoSuchElementException e) {
-
-                try {
-                    driver.findElement(By.tagName("body")).click();
-                } catch (Exception ignored2) {}
-
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ignored3) {}
-
-                if (attempts >= 3) {
-                    throw e;
-                }
-            }
-        }
+        selectFromGlobalLabeledDropdown("Departman", departmentName);
     }
+
+    public void selectDoctor(String doctorName) {
+        selectFromGlobalLabeledDropdown("Doktor", doctorName);
+    }
+
 
     private WebElement findSidebarFormGroupByLabel(String labelText) {
         By formGroupLocator = By.xpath(
@@ -442,55 +607,6 @@ public class AdmissionPatientSearchPage {
         );
 
         return wait.until(ExpectedConditions.visibilityOfElementLocated(formGroupLocator));
-    }
-
-    public void selectDoctor(String doctorName) {
-        By popupLocator = By.cssSelector(
-                "div.e-ddl.e-control.e-lib.e-popup.e-popup-open[role='dialog']"
-        );
-
-        int attempts = 0;
-
-        while (attempts < 3) {
-            attempts++;
-
-            WebElement formGroup = findGlobalFormGroupByLabel("Doktor");
-
-            WebElement combo;
-            try {
-                combo = formGroup.findElement(
-                        By.cssSelector("span.e-input-group-icon.e-ddl-icon")
-                );
-            } catch (NoSuchElementException ex) {
-                combo = formGroup.findElement(By.cssSelector("span.e-ddl"));
-            }
-
-            wait.until(ExpectedConditions.elementToBeClickable(combo));
-            scrollIntoView(combo);
-            combo.click();
-
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException ignored) {}
-
-            try {
-                selectFromDropdown(popupLocator, doctorName);
-                return;
-            } catch (TimeoutException | NoSuchElementException e) {
-
-                try {
-                    driver.findElement(By.tagName("body")).click();
-                } catch (Exception ignored2) {}
-
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ignored3) {}
-
-                if (attempts >= 3) {
-                    throw e;
-                }
-            }
-        }
     }
 
     public void clickFinalSaveOnVisitScreen() {
@@ -556,11 +672,28 @@ public class AdmissionPatientSearchPage {
 
     // ================== LABEL'LI DROPDOWN YARDIMCILARI ==================
 
+    /**
+     * İlk adım kayıt formu (admission-sidebar__registration-form) açık mı?
+     */
+    private boolean isRegistrationFormOpen() {
+        try {
+            List<WebElement> forms = driver.findElements(registrationForm);
+            for (WebElement form : forms) {
+                if (form.isDisplayed()) {
+                    return true;
+                }
+            }
+        } catch (Exception ignored) {}
+        return false;
+    }
+
     private void selectFromLabeledDropdown(String labelText, By popupLocator, String value) {
         int attempts = 0;
 
         while (attempts < 3) {
             try {
+                waitForLoadingOverlayToDisappear();
+
                 WebElement group = findFormGroupByLabel(labelText);
 
                 WebElement combo;
@@ -575,16 +708,26 @@ public class AdmissionPatientSearchPage {
                 wait.until(ExpectedConditions.elementToBeClickable(combo));
                 scrollIntoView(combo);
                 combo.click();
-
                 selectFromDropdown(popupLocator, value);
+
                 return;
 
-            } catch (StaleElementReferenceException e) {
+            } catch (StaleElementReferenceException | ElementClickInterceptedException | TimeoutException e) {
                 attempts++;
-                if (attempts >= 3) throw e;
+                LOGGER.warn("Label '{}' için dropdown seçiminde sorun, deneme: {}", labelText, attempts, e);
+
                 try {
-                    Thread.sleep(300);
-                } catch (InterruptedException ignored) {}
+                    driver.findElement(By.tagName("body")).click();
+                } catch (Exception ignored2) {}
+
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ignored3) {}
+
+                if (attempts >= 3) {
+                    throw new RuntimeException(
+                            "Dropdown '" + labelText + "' için değer seçilemedi: " + value, e);
+                }
             }
         }
     }
@@ -601,6 +744,8 @@ public class AdmissionPatientSearchPage {
 
         while (attempts < 3) {
             try {
+                waitForLoadingOverlayToDisappear();
+
                 WebElement group = findGlobalFormGroupByLabel(labelText);
 
                 WebElement combo;
@@ -623,12 +768,20 @@ public class AdmissionPatientSearchPage {
                 selectFromDropdown(popupLocator, value);
                 return;
 
-            } catch (StaleElementReferenceException e) {
+            } catch (StaleElementReferenceException | ElementClickInterceptedException | TimeoutException e) {
                 attempts++;
-                if (attempts >= 3) throw e;
+                LOGGER.warn("Global dropdown '{}' seçiminde sorun, deneme: {}", labelText, attempts, e);
+
+                try {
+                    driver.findElement(By.tagName("body")).click();
+                } catch (Exception ignored2) {}
+
                 try {
                     Thread.sleep(300);
-                } catch (InterruptedException ignored) {}
+                } catch (InterruptedException ignored3) {}
+
+                if (attempts >= 3) throw new RuntimeException(
+                        "Global dropdown '" + labelText + "' için değer seçilemedi: " + value, e);
             }
         }
     }
@@ -636,11 +789,40 @@ public class AdmissionPatientSearchPage {
     // ================== PATIENT SEARCH – DETAYLI ARAMA & GRID DOĞRULAMA ==================
 
     public void openDetailedFilterDialog() {
-        WebElement button = wait.until(ExpectedConditions.elementToBeClickable(detailedFilterButton));
-        scrollIntoView(button);
-        button.click();
+        waitForLoadingOverlayToDisappear();
 
-        wait.until(ExpectedConditions.visibilityOfElementLocated(detailedFilterDialog));
+        int attempts = 0;
+        while (attempts < 3) {
+            WebElement button = wait.until(
+                    ExpectedConditions.visibilityOfElementLocated(detailedFilterButton)
+            );
+            scrollIntoView(button);
+
+            try {
+                wait.until(ExpectedConditions.elementToBeClickable(button)).click();
+                wait.until(ExpectedConditions.visibilityOfElementLocated(detailedFilterDialog));
+                return;
+            } catch (ElementClickInterceptedException e) {
+                attempts++;
+                LOGGER.warn("Detaylı filtre butonuna tıklanamadı (overlay olabilir). Deneme: {}", attempts, e);
+
+                waitForLoadingOverlayToDisappear();
+
+                if (attempts >= 3) {
+                    try {
+                        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", button);
+                        wait.until(ExpectedConditions.visibilityOfElementLocated(detailedFilterDialog));
+                        return;
+                    } catch (Exception jsEx) {
+                        throw e;
+                    }
+                } else {
+                    try {
+                        Thread.sleep(300);
+                    } catch (InterruptedException ignored) {}
+                }
+            }
+        }
     }
 
     public void clickDetailedFilterClear() {
@@ -672,20 +854,46 @@ public class AdmissionPatientSearchPage {
     }
 
     public void searchPatientByName(String fullName) {
+        waitForLoadingOverlayToDisappear();
+
         WebElement searchInput = wait.until(
                 ExpectedConditions.visibilityOfElementLocated(toolbarSearchInput)
         );
 
         scrollIntoView(searchInput);
+        searchInput.click();
+
+        Keys cmdCtrl = System.getProperty("os.name").toLowerCase().contains("mac")
+                ? Keys.COMMAND : Keys.CONTROL;
 
         try {
-            searchInput.sendKeys(Keys.chord(Keys.CONTROL, "a"));
+            searchInput.sendKeys(Keys.chord(cmdCtrl, "a"));
             searchInput.sendKeys(Keys.DELETE);
         } catch (Exception ignored) {
             try {
                 searchInput.clear();
             } catch (Exception ignored2) {}
         }
+
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            js.executeScript(
+                    "var el = arguments[0];" +
+                            "if (!el) return;" +
+                            "el.value = '';" +
+                            "if (el.dispatchEvent) {" +
+                            "  el.dispatchEvent(new Event('input',  {bubbles:true}));" +
+                            "  el.dispatchEvent(new Event('change', {bubbles:true}));" +
+                            "}",
+                    searchInput
+            );
+        } catch (Exception ignored) { }
+
+        new WebDriverWait(driver, Duration.ofSeconds(3))
+                .until(d -> {
+                    String v = searchInput.getAttribute("value");
+                    return v == null || v.trim().isEmpty();
+                });
 
         searchInput.sendKeys(fullName);
         searchInput.sendKeys(Keys.ENTER);
@@ -700,31 +908,42 @@ public class AdmissionPatientSearchPage {
                 ExpectedConditions.visibilityOfElementLocated(gridRoot)
         );
 
-        List<WebElement> rows = grid.findElements(gridRows);
+        long end = System.currentTimeMillis() + 10000;
 
-        boolean found = false;
+        while (System.currentTimeMillis() < end) {
+            List<WebElement> rows = grid.findElements(gridRows);
+            boolean found = false;
 
-        for (WebElement row : rows) {
-            try {
-                WebElement firstCell = row.findElement(By.xpath(".//td[@role='gridcell'][1]"));
-                String cellText = firstCell.getText().trim();
+            for (WebElement row : rows) {
+                try {
+                    WebElement firstCell = row.findElement(By.xpath(".//td[@role='gridcell'][1]"));
+                    String cellText = firstCell.getText().trim();
+                    if (cellText.isEmpty()) continue;
 
-                if (cellText.isEmpty()) continue;
+                    String normalizedCell = normalizeText(cellText);
 
-                String normalizedCell = normalizeText(cellText);
-
-                if (normalizedCell.contains(expected)) {
-                    found = true;
-                    break;
-                }
-            } catch (NoSuchElementException ignored) {
+                    if (normalizedCell.contains(expected)) {
+                        found = true;
+                        break;
+                    }
+                } catch (NoSuchElementException ignored) {}
             }
+
+            if (found) {
+                LOGGER.info("Hasta grid üzerinde bulundu: '{}'", fullName);
+                return;
+            }
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ignored) {}
         }
 
+        WebElement gridElement = driver.findElement(gridRoot);
         Assert.assertTrue(
-                found,
+                false,
                 "Hasta kaydı grid üzerinde bulunamadı: '" + fullName + "'. " +
-                        "Grid HTML: " + grid.getAttribute("outerHTML")
+                        "Grid HTML: " + gridElement.getAttribute("outerHTML")
         );
     }
 }

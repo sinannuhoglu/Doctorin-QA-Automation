@@ -290,7 +290,6 @@ public class AdmissionAutoServiceItemRulesPage {
 
         wait.until(ExpectedConditions.invisibilityOf(dialog));
 
-        // Silme sonrası grid refresh'i için spinner kontrolü
         waitForGridToBeStable();
 
         wait.until(ExpectedConditions.visibilityOfElementLocated(gridTable));

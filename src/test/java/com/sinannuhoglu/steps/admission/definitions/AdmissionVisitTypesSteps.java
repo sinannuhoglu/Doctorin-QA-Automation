@@ -9,10 +9,8 @@ public class AdmissionVisitTypesSteps {
 
     private final AdmissionVisitTypesPage visitTypesPage = new AdmissionVisitTypesPage();
 
-    // CREATE + EDIT senaryolarında kullanılan auto-index isim
     private String autoName;
 
-    // PASİF/AKTİF senaryosunda griddeki gerçek kayıt adı
     private String statusTargetName;
 
     // ============== NAVIGATION ==================

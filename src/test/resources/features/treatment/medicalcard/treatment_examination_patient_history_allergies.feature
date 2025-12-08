@@ -30,17 +30,11 @@
 
   Senaryo: Muayene sayfasında Hasta Özgeçmişi Alerjiler alanında kayıt oluşturulması ve silinmesi
 
-    # 1) ALERJİLER FORMUNUN AÇILMASI
+    # Alerji kaydının oluşturulması
     Ve Muayene sayfasında Hasta Özgeçmişi penceresinde Alerjiler alanı için yeni kayıt ekleme penceresini açar
-
-    # 2) FORMUN DOLDURULMASI
     Ve Muayene sayfasında Hasta Özgeçmişi Alerjiler alanında "Mevsimsel" alerji tipi, "Polen" alerjen ve "Polen alerjisi mevcut." açıklama girer
-
-    # 3) KAYDIN OLUŞTURULMASI
     Ve Muayene sayfasında Hasta Özgeçmişi Alerjiler alanında Ekle butonuna tıklar
 
-    # 4) KAYDIN DOĞRULANMASI
+    # Alerji kaydının doğrulanması ve silinmesi
     O zaman Muayene sayfasında Hasta Özgeçmişi Alerjiler alanında "Polen" alerjeni için "Polen alerjisi mevcut." açıklamasıyla kaydın oluşturulduğu doğrulanır
-
-    # 5) KAYDIN SİLİNMESİ
     Ve Muayene sayfasında Hasta Özgeçmişi Alerjiler alanında "Polen" alerjeni için sil butonuna tıklar

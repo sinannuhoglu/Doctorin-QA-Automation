@@ -268,15 +268,21 @@ public class CatalogueCategoryTypesPage {
         throw new NoSuchElementException("Servis Türü dropdown içinde değer bulunamadı: " + serviceType);
     }
 
+    /**
+     * Multi-select popup içindeki tüm mevcut seçimleri temizler.
+     */
     private void clearAllBranches(WebElement popup) {
         try {
-            WebElement selectAllCheckbox = popup.findElement(
-                    By.xpath(".//li[contains(@class,'e-list-item')][.//span[normalize-space()='Hepsini seç']]//input[@type='checkbox']")
+            WebElement selectAllItem = popup.findElement(
+                    By.xpath(".//li[contains(@class,'e-list-item')][.//span[normalize-space()='Hepsini seç']]")
             );
-            safeClick(selectAllCheckbox);
-            safeClick(selectAllCheckbox);
+            WebElement selectAllCheckbox = selectAllItem.findElement(By.cssSelector("input[type='checkbox']"));
+
+            safeClick(selectAllItem);
+            safeClick(selectAllItem);
             return;
         } catch (NoSuchElementException ignore) {
+            // "Hepsini seç" yoksa aşağıdaki fallback'e geç
         }
 
         List<WebElement> activeItems = popup.findElements(By.cssSelector("li.e-list-item.e-active"));
@@ -289,6 +295,9 @@ public class CatalogueCategoryTypesPage {
     }
 
     public void selectBranch(String branchName) {
+
+        String target = branchName.trim().toLowerCase(Locale.ROOT);
+
         WebElement form = wait.until(
                 ExpectedConditions.visibilityOfElementLocated(categoryDialogForm)
         );
@@ -307,72 +316,100 @@ public class CatalogueCategoryTypesPage {
         scrollIntoView(multiselectWrapper);
 
         WebElement openTarget;
-        try {
-            openTarget = multiselectWrapper.findElement(
-                    By.cssSelector("span.e-input-group-icon")
-            );
-        } catch (NoSuchElementException e) {
-            openTarget = multiselectWrapper.findElement(
-                    By.cssSelector("div.e-multi-select-wrapper")
-            );
+        List<WebElement> icons = multiselectWrapper.findElements(By.cssSelector("span.e-input-group-icon"));
+        if (!icons.isEmpty()) {
+            openTarget = icons.get(0);
+        } else {
+            openTarget = multiselectWrapper.findElement(By.cssSelector("div.e-multi-select-wrapper"));
         }
+
+        safeClick(openTarget);
 
         By popupLocator = By.cssSelector(
-                "div.e-ddl.e-multi-select-list-wrapper.e-popup-open"
+                "div.e-ddl.e-multi-select-list-wrapper.e-popup.e-checkbox.e-lib.e-control.e-popup-open"
         );
-        if (driver.findElements(popupLocator).isEmpty()) {
-            safeClick(openTarget);
-        }
+        wait.until(ExpectedConditions.visibilityOfElementLocated(popupLocator));
 
-        WebElement popup = wait.until(
-                ExpectedConditions.visibilityOfElementLocated(popupLocator)
-        );
+        for (int attempt = 0; attempt < 3; attempt++) {
+            WebElement popup = driver.findElement(popupLocator);
+            List<WebElement> actives = popup.findElements(By.cssSelector("li.e-list-item.e-active"));
 
-        clearAllBranches(popup);
-
-        try {
-            WebElement searchInput = multiselectWrapper.findElement(
-                    By.cssSelector("span.e-multi-searcher input")
-            );
-            searchInput.clear();
-            searchInput.sendKeys(branchName);
-
-            wait.until(d ->
-                    !popup.findElements(By.cssSelector("ul li")).isEmpty()
-            );
-        } catch (Exception ignored) {
-        }
-
-        List<WebElement> items = popup.findElements(By.cssSelector("ul li"));
-
-        String target = branchName.trim().toLowerCase(Locale.ROOT);
-        boolean found = false;
-
-        for (WebElement item : items) {
-            String itemText = item.getText().trim();
-            String itemLower = itemText.toLowerCase(Locale.ROOT);
-
-            if (!itemLower.contains(target)) {
-                continue;
+            if (actives.isEmpty()) {
+                break;
             }
 
-            scrollIntoView(item);
-            safeClick(item);
+            for (WebElement a : actives) {
+                try {
+                    safeClick(a);
+                } catch (StaleElementReferenceException ignored) {
+                }
+            }
 
-            found = true;
-            break;
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException ignored) {
+            }
         }
 
-        if (!found) {
-            throw new NoSuchElementException("Branş listesinde istenen değer bulunamadı: " + branchName);
-        }
+        for (int attempt = 0; attempt < 3; attempt++) {
 
-        // Popup dışına tıklayarak kapat
-        Actions actions = new Actions(driver);
-        actions.moveToElement(label).click().perform();
+            WebElement popup = driver.findElement(popupLocator);
+            List<WebElement> items = popup.findElements(By.cssSelector("ul li.e-list-item"));
+
+            WebElement targetItem = null;
+            for (WebElement it : items) {
+                String text = it.getText().trim().toLowerCase(Locale.ROOT);
+                if (text.equals(target)) {
+                    targetItem = it;
+                    break;
+                }
+            }
+
+            if (targetItem == null) {
+                throw new NoSuchElementException("Branş listesinde istenen değer bulunamadı: " + branchName);
+            }
+
+            safeClick(targetItem);
+
+            try {
+                Thread.sleep(120);
+            } catch (InterruptedException ignored) {
+            }
+
+            popup = driver.findElement(popupLocator);
+            List<WebElement> actives = popup.findElements(By.cssSelector("li.e-list-item.e-active"));
+
+            if (actives.size() == 1 &&
+                    actives.get(0).getText().trim().equalsIgnoreCase(branchName)) {
+                break; // her şey doğru → çık
+            }
+
+            for (WebElement a : actives) {
+                try {
+                    safeClick(a);
+                } catch (StaleElementReferenceException ignored) {
+                }
+            }
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException ignored) {
+            }
+        }
 
         try {
-            wait.until(ExpectedConditions.invisibilityOf(popup));
+            WebElement dialogHeader = driver.findElement(By.cssSelector("div.e-dlg-header-content"));
+            scrollIntoView(dialogHeader);
+            dialogHeader.click();
+        } catch (Exception e) {
+            try {
+                driver.switchTo().activeElement().sendKeys(Keys.ESCAPE);
+            } catch (Exception ignored) {
+            }
+        }
+
+        try {
+            wait.until(ExpectedConditions.invisibilityOfElementLocated(popupLocator));
         } catch (TimeoutException ignored) {
         }
     }
@@ -403,9 +440,35 @@ public class CatalogueCategoryTypesPage {
         WebElement input = container.findElement(By.cssSelector("input"));
 
         typeInto(input, text);
+
         input.sendKeys(Keys.ENTER);
 
-        waitForGridLoaded();
+        final String target = text.trim().toLowerCase(Locale.ROOT);
+
+        wait.until(driver -> {
+            List<WebElement> rows = driver.findElements(gridRows);
+            List<WebElement> empties = driver.findElements(emptyRow);
+
+            if (rows.isEmpty() && !empties.isEmpty()) {
+                return true;
+            }
+
+            if (rows.isEmpty()) {
+                return false;
+            }
+
+            // En az bir satırın 1. kolonu aranan metni içeriyorsa filtre uygulanmış kabul et
+            for (WebElement row : rows) {
+                List<WebElement> cells = row.findElements(By.tagName("td"));
+                if (cells.isEmpty()) continue;
+
+                String name = cells.get(0).getText().trim().toLowerCase(Locale.ROOT);
+                if (name.contains(target)) {
+                    return true;
+                }
+            }
+            return false;
+        });
     }
 
     // ================== GRID DOĞRULAMA ==================
@@ -467,21 +530,54 @@ public class CatalogueCategoryTypesPage {
         waitForGridLoaded();
 
         String target = name.trim().toLowerCase(Locale.ROOT);
-        List<WebElement> rows = driver.findElements(gridRows);
-
         WebElement targetRow = null;
 
-        for (WebElement row : rows) {
-            String rowName = getCellText(row, 1);
-            if (rowName.trim().toLowerCase(Locale.ROOT).equals(target)) {
-                targetRow = row;
-                break;
+        for (int attempt = 0; attempt < 2 && targetRow == null; attempt++) {
+
+            List<WebElement> rows = driver.findElements(gridRows);
+
+            WebElement exactMatch = null;
+            WebElement containsMatch = null;
+
+            for (WebElement row : rows) {
+                String rowName = getCellText(row, 1);
+                String norm = rowName.trim().toLowerCase(Locale.ROOT);
+
+                if (norm.equals(target)) {
+                    exactMatch = row;
+                    break;
+                }
+
+                if (containsMatch == null && norm.contains(target)) {
+                    containsMatch = row;
+                }
+            }
+
+            if (exactMatch != null) {
+                targetRow = exactMatch;
+            } else if (containsMatch != null) {
+                targetRow = containsMatch;
+            }
+
+            if (targetRow == null) {
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException ignored) {
+                }
+                waitForGridLoaded();
             }
         }
 
         if (targetRow == null) {
+            List<WebElement> rows = driver.findElements(gridRows);
+            List<String> rowNames = new ArrayList<>();
+            for (WebElement row : rows) {
+                rowNames.add(getCellText(row, 1));
+            }
+
             throw new NoSuchElementException(
-                    "Adı verilen kategori tipi satırı gridde bulunamadı: " + name
+                    "Adı verilen kategori tipi satırı gridde bulunamadı: " + name +
+                            " - Grid satırları: " + rowNames
             );
         }
 

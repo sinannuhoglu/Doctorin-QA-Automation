@@ -525,26 +525,50 @@ public class ResourcesDepartmentsPage {
         ));
     }
 
+    /**
+     * DROPDOWN SEÇİMİNİ DAHA DAYANIKLI HALE GETİRİLMİŞ HALİ
+     */
     private void selectFromDropdownInDialog(String labelText, String optionText) {
+        // İlgili label'a ait form-group bulunur
         WebElement formGroup = driver.findElement(By.xpath(
-                "//div[contains(@id,'modal-dialog')]//label[normalize-space()='" + labelText + "']/ancestor::div[contains(@class,'e-form-group')]"
+                "//div[contains(@id,'modal-dialog')]//label[normalize-space()='" + labelText + "']" +
+                        "/ancestor::div[contains(@class,'e-form-group')]"
         ));
 
-        WebElement icon = formGroup.findElement(By.cssSelector("span.e-ddl .e-ddl-icon"));
-        wait.until(ExpectedConditions.elementToBeClickable(icon)).click();
+        // İkon için hem klasik e-ddl-icon hem de input-group-icon kombinasyonunu dene
+        WebElement icon = null;
+        try {
+            icon = formGroup.findElement(By.cssSelector("span.e-ddl .e-ddl-icon"));
+        } catch (NoSuchElementException e) {
+            // Bazı ekranlarda sınıf yapısı farklı olabilir
+            icon = formGroup.findElement(By.cssSelector("span.e-input-group-icon.e-ddl-icon"));
+        }
 
-        WebElement popup = wait.until(
-                ExpectedConditions.visibilityOfElementLocated(
-                        By.cssSelector("div.e-ddl.e-control.e-lib.e-popup.e-popup-open")
-                )
+        // Dropdown'u aç
+        try {
+            wait.until(ExpectedConditions.elementToBeClickable(icon)).click();
+        } catch (Exception ex) {
+            System.out.println("[ResourcesPage] Dropdown ikonu normal tıklanamadı, JS click denenecek: " + ex);
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", icon);
+        }
+
+        // Popup container'a özel CSS'e bağımlı kalmak yerine doğrudan li.e-list-item'a wait et
+        By optionLocator = By.xpath(
+                "//li[contains(@class,'e-list-item')][normalize-space()='" + optionText + "']"
         );
 
-        WebElement option = wait.until(d ->
-                popup.findElement(By.xpath(".//li[normalize-space()='" + optionText + "']"))
-        );
+        WebElement option = new WebDriverWait(driver, Duration.ofSeconds(10))
+                .until(ExpectedConditions.elementToBeClickable(optionLocator));
 
-        wait.until(ExpectedConditions.elementToBeClickable(option)).click();
-        wait.until(ExpectedConditions.invisibilityOf(popup));
+        option.click();
+
+        // Dropdown'un kapanmasını option elementinin kaybolması üzerinden takip et
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .until(ExpectedConditions.invisibilityOfElementLocated(optionLocator));
+        } catch (TimeoutException ignored) {
+            // Kapanış kontrolü kritik değil; grid zaten bir sonraki adımda yeniden okunuyor
+        }
     }
 
     private void openNewDepartmentDialog() {

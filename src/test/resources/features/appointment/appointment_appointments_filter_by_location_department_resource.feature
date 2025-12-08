@@ -30,6 +30,7 @@
     Ve Randevular ekranında "HASTANUR İYİLEŞMEZ" hastasına ait randevu kartını açar
     Ve Randevular ekranında Randevu Detayı penceresinde Check-in butonuna tıklar
     Ve Randevular ekranında Randevular Detayı penceresinde Admission butonuna tıklar
+    Ve Randevular ekranında Hasta Kabul penceresinin yüklenmesini bekler
     Ve Randevular ekranında Hasta Kabul penceresinde Kaydet butonuna tıklar
 
   Senaryo: Randevular ekranında Çankaya / KBB / Uzm. Dr. Aykan BÜYÜKAYDIN filtresi ile kapanış etkinliği oluşturulması ve silinmesi

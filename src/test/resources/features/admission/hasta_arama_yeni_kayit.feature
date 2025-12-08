@@ -21,8 +21,8 @@
     Ve Hasta Arama sayfasında Yeni Ekle butonuna tıklar
     Ve Hasta Kabul formunda Uyruk alanından "TÜRKİYE CUMHURİYETİ" seçeneğini seçer
     Ve Hasta Kabul formunda Dil alanından "Türkçe" seçeneğini seçer
-    Ve Hasta Kabul formunda Kimlik Numarası alanına "12345678912" değerini girer
-    Ve Hasta Kabul formunda Ad alanına "Hastanurr" değerini girer
+    Ve Hasta Kabul formunda Kimlik Numarası alanına "12355678919" değerini girer
+    Ve Hasta Kabul formunda Ad alanına "Hastanur" değerini girer
     Ve Hasta Kabul formunda Soyad alanına "Yılmaz" değerini girer
     Ve Hasta Kabul formunda Doğum Tarihi alanına "11.01.1990" tarihini girer
     Ve Hasta Kabul formunda Cinsiyet alanından "Erkek" seçeneğini seçer
@@ -41,5 +41,5 @@
     Ve Hasta Arama ekranında Detaylı Arama penceresini açar
     Ve Hasta Arama ekranındaki Detaylı Arama penceresinde Temizle butonuna tıklar
     Ve Hasta Arama ekranındaki Detaylı Arama penceresinde Uygula butonuna tıklar
-    Ve Hasta Arama ekranındaki arama alanına "HASTANURR YILMAZ" yazar ve arama yapar
-    O zaman Hasta Arama listesindeki sonuçlarda "HASTANURR YILMAZ" kaydını görmelidir
+    Ve Hasta Arama ekranındaki arama alanına "HASTANUR YILMAZ" yazar ve arama yapar
+    O zaman Hasta Arama listesindeki sonuçlarda "HASTANUR YILMAZ" kaydını görmelidir

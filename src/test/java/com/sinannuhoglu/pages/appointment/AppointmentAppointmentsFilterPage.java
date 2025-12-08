@@ -259,6 +259,28 @@ public class AppointmentAppointmentsFilterPage {
         return raw;
     }
 
+    /**
+     * Hasta Kabul penceresinin animasyonlarının bitmesini ve
+     * Kaydet butonunun gerçekten tıklanabilir hale gelmesini bekler.
+     */
+    private void waitAdmissionSidebarReady() {
+        wait.until(ExpectedConditions.visibilityOfElementLocated(ADMISSION_SIDEBAR_ROOT));
+
+        wait.until(ExpectedConditions.elementToBeClickable(ADMISSION_SAVE_BUTTON));
+
+        try {
+            Thread.sleep(500); // 0.5 sn
+        } catch (InterruptedException ignored) {
+        }
+    }
+
+    /**
+     * Step definition içinden doğrudan çağırmak için public wrapper.
+     */
+    public void waitAdmissionSidebarReadyForStep() {
+        waitAdmissionSidebarReady();
+    }
+
     // ===================== SIDEBAR & MODAL DURUM YARDIMCILARI =====================
 
     private boolean isSidebarOpen() {
@@ -288,7 +310,6 @@ public class AppointmentAppointmentsFilterPage {
      * Modal DOM'a geç geldiği durumlarda tekrar tekrar arayıp tıklar.
      */
     private void clickOutOfPlanYesIfPresent() {
-        // Modal hiç yoksa hemen çık
         if (!isOutOfPlanDialogVisible()) {
             return;
         }
@@ -756,7 +777,7 @@ public class AppointmentAppointmentsFilterPage {
      */
     private void waitQuickPopupReady() {
         WebElement popup = wait.until(driver -> {
-            List<WebElement> list = driver.findElements(QUICK_POPUP); // div.e-quick-popup-wrapper.e-popup-open
+            List<WebElement> list = driver.findElements(QUICK_POPUP);
             for (WebElement p : list) {
                 try {
                     if (p.isDisplayed() && p.getRect().getHeight() > 0) {
@@ -965,7 +986,7 @@ public class AppointmentAppointmentsFilterPage {
     // ===================== HASTA KABUL KAYDET =====================
 
     public void saveAdmissionForm() {
-        wait.until(ExpectedConditions.visibilityOfElementLocated(ADMISSION_SIDEBAR_ROOT));
+        waitAdmissionSidebarReady();
 
         safeClick(ADMISSION_SAVE_BUTTON);
 

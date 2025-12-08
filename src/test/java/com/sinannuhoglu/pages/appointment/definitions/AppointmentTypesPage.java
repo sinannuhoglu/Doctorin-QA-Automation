@@ -27,48 +27,38 @@ public class AppointmentTypesPage {
 
     // ==================== LOCATORS ======================
 
-    // Toolbar -> Yeni Ekle
     private final By newAppointmentTypeButton = By.xpath(
             "//button[contains(@class,'e-btn')]" +
                     "[.//span[normalize-space()='Yeni Ekle'] or normalize-space()='Yeni Ekle']"
     );
 
-    // Toolbar -> Detaylı Arama (filter ikonu) - daha esnek locator
     private final By filterButton = By.xpath(
             "//div[contains(@class,'e-toolbar-item') and contains(@class,'e-template')" +
                     " and (@id='filter' or contains(@id,'filter'))]" +
                     "//button"
     );
 
-    // Detaylı Arama popup içi
     private final By detailedSearchClearButton = By.xpath("//button[normalize-space()='Temizle']");
     private final By detailedSearchApplyButton = By.xpath("//button[normalize-space()='Uygula']");
 
-    // Yeni Ekle / Düzenle popup form
     private final By appointmentTypeDialogForm = By.cssSelector("form.e-data-form");
 
-    // Dialog overlay (Detaylı Arama, Yeni Ekle, Düzenle vs.)
     private final By dialogOverlay = By.cssSelector("div.e-dlg-overlay");
 
-    // Grid
     private final By gridContent = By.cssSelector("div.e-gridcontent");
     private final By gridRows = By.cssSelector("#Grid_content_table tbody tr.e-row");
     private final By emptyRow = By.cssSelector("#Grid_content_table tbody tr.e-emptyrow");
 
-    // Toolbar arama alanı (Ara)
     private final By toolbarSearchContainer = By.cssSelector("div.e-toolbar-item.e-template#search");
 
-    // Aktif/Pasif değişimi için onay popup'ındaki Evet butonu
     private final By statusChangeConfirmYesButton = By.xpath(
             "//div[contains(@class,'e-dialog')]//button[contains(@class,'e-primary') and normalize-space()='Evet']"
     );
 
     // ==================== STATE FIELDS ===================
 
-    // CREATE senaryosu için auto index
     private String autoAppointmentTypeName;
 
-    // EDIT senaryosu için hazırlanmış satır
     private WebElement preparedEditRow;
 
     // ==================== HELPERS ===========================
@@ -141,7 +131,7 @@ public class AppointmentTypesPage {
 
         Assert.fail("Gridde beklenen randevu tipi bulunamadı. Ad: " + name +
                 " - Görünen kayıtlar: " + seen);
-        return null; // unreachable
+        return null;
     }
 
     /**
@@ -229,19 +219,16 @@ public class AppointmentTypesPage {
             String itemText = item.getText().trim();
             String itemLower = itemText.toLowerCase(Locale.ROOT);
 
-            // 1) Tam eşitlik
             if (itemText.equals(optionText)) {
                 item.click();
                 return;
             }
 
-            // 2) Case-insensitive eşitlik
             if (itemLower.equals(target)) {
                 item.click();
                 return;
             }
 
-            // 3) İçinde geçme (ör: "Kontrol Muayenesi" gibi)
             if (itemLower.contains(target)) {
                 item.click();
                 return;
@@ -275,7 +262,6 @@ public class AppointmentTypesPage {
     // ================= DETAYLI ARAMA ========================
 
     public void openDetailedSearch() {
-        // Olası overlay’leri kapansın diye bekle
         try {
             wait.until(ExpectedConditions.invisibilityOfElementLocated(dialogOverlay));
         } catch (TimeoutException ignored) {
@@ -284,12 +270,10 @@ public class AppointmentTypesPage {
         WebElement filter;
 
         try {
-            // 1. deneme: ana locator
             filter = wait.until(
                     ExpectedConditions.presenceOfElementLocated(filterButton)
             );
         } catch (TimeoutException e) {
-            // 2. deneme: aria-label üzerinden (bazı ekranlarda id değişirse)
             By altFilterButton = By.xpath(
                     "//button[@aria-label='Detaylı Arama' or @title='Detaylı Arama' " +
                             "or .//span[contains(@class,'e-icons') and contains(@class,'e-search')]]"
@@ -308,7 +292,6 @@ public class AppointmentTypesPage {
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", filter);
         }
 
-        // Popup gerçekten açıldı mı kontrol et
         wait.until(ExpectedConditions.visibilityOfElementLocated(detailedSearchClearButton));
     }
 
@@ -429,7 +412,6 @@ public class AppointmentTypesPage {
             if (nameLower.startsWith(baseLower)) {
                 countSameBase++;
 
-                // İlk eşleşen satırı hedef olarak al
                 if (preparedEditRow == null) {
                     preparedEditRow = row;
                 }
@@ -440,7 +422,6 @@ public class AppointmentTypesPage {
             Assert.fail("Düzenleme için hedef satır bulunamadı. Ad (base): " + baseName);
         }
 
-        // Yeni isim: base veya base + n
         if (countSameBase == 0) {
             autoAppointmentTypeName = baseName;
         } else {
@@ -465,7 +446,6 @@ public class AppointmentTypesPage {
 
         WebElement actionCell = tds.get(4);
 
-        // Üç nokta menüsü butonu
         WebElement dropdownButton = actionCell.findElement(
                 By.cssSelector("button[aria-label='dropdownbutton'], button.e-dropdown-btn")
         );
@@ -474,7 +454,6 @@ public class AppointmentTypesPage {
         dropdownButton.click();
 
         try {
-            // Açılan menüden "Düzenle" seçeneği
             By editMenuItem = By.xpath(
                     "//ul[contains(@class,'e-dropdown') or contains(@class,'e-menu') or contains(@class,'e-contextmenu')]" +
                             "//li[.//span[normalize-space()='Düzenle'] or normalize-space()='Düzenle']"
@@ -486,13 +465,11 @@ public class AppointmentTypesPage {
             );
             editItem.click();
         } catch (TimeoutException e) {
-            // Menüden yakalanamazsa son çare: satıra çift tıklama
             Actions actions = new Actions(driver);
             scrollIntoView(preparedEditRow);
             actions.doubleClick(preparedEditRow).perform();
         }
 
-        // Düzenle popup'ının açılmasını bekle
         wait.until(ExpectedConditions.visibilityOfElementLocated(appointmentTypeDialogForm));
     }
 
@@ -519,7 +496,6 @@ public class AppointmentTypesPage {
     }
 
     public void verifyAppointmentTypeExists(String name) {
-        // Sadece var mı diye kontrol ediyor
         verifyAppointmentTypeListed(name);
     }
 
@@ -560,7 +536,6 @@ public class AppointmentTypesPage {
             boolean colorMatches = colorNorm.equals(expectedColorNorm);
 
             if (typeMatches && colorMatches) {
-                // kayıt bulundu → test başarılı
                 return;
             }
         }
@@ -606,7 +581,6 @@ public class AppointmentTypesPage {
                     "' ile başlayan bir randevu tipi kaydı bulunamadı. Görünen kayıtlar: " + seen);
         }
 
-        // 1. sütundaki gerçek adı döndür
         return getCellText(targetRow, 1);
     }
 

@@ -44,7 +44,6 @@ public class ResourcesHealthcareResourceSteps {
             String department,
             String sube
     ) {
-        // baseResourceName ve name genellikle aynı kullanılacak (örn: "Göz Ölçümü").
         healthcareResourcePage.createResourceWithAutoIndex(baseResourceName, tip, altTip, department, sube);
     }
 

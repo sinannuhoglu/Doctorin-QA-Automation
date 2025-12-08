@@ -20,7 +20,7 @@
 
   Senaryo: Randevu kaynağı için günlük mesai kaydının eklenmesi
     # 3) MESAİ KAYDININ OLUŞTURULMASI
-    Ve Randevu Kaynakları ekranında kaynak detayında "Mesailer" sekmesine tıklar
+    Ve Randevu Kaynakları ekranında kaynak detayında Mesailer sekmesine gider
     Ve Mesailer sekmesinde Yeni Ekle butonuna tıklar
     Ve Mesailer sekmesinde açılan formda Tarih alanına "10.12.2025" değerini girer
     Ve Mesailer sekmesinde açılan formda Başlangıç Saati alanından "08:30" saatini seçer
@@ -33,7 +33,7 @@
 
   Senaryo: Randevu kaynağı için günlük mesai kaydının eklenmesi ve silinmesi
     # 3) OLUŞTURULAN KAYDIN SİLİNMESİ
-    Ve Randevu Kaynakları ekranında kaynak detayında "Mesailer" sekmesine tıklar
+    Ve Randevu Kaynakları ekranında kaynak detayında Mesailer sekmesine gider
     Ve Mesailer sekmesinde grid üzerinde "10.12.2025" tarihli "08:30" - "18:30" saat aralığında "Gün içi planlı mesai" açıklamasına sahip kaydın üç nokta menüsüne tıklar
     Ve Mesailer sekmesinde açılan üç nokta menüsünde "Sil" seçeneğine tıklar
     Ve Mesailer sekmesinde açılan silme onay penceresinde "Evet" butonuna tıklar

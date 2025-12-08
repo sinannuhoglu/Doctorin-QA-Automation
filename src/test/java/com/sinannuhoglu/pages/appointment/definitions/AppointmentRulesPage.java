@@ -38,38 +38,30 @@ public class AppointmentRulesPage {
 
     // ==================== LOCATORS ======================
 
-    // Toolbar -> Yeni Ekle
     private final By newRuleButton = By.xpath(
             "//button[contains(@class,'e-btn')]" +
                     "[.//span[normalize-space()='Yeni Ekle'] or normalize-space()='Yeni Ekle']"
     );
 
-    // Toolbar -> Detaylı Arama (filter ikonu)
     private final By filterButton = By.xpath(
             "//div[contains(@class,'e-toolbar-item') and contains(@class,'e-template')" +
                     " and (@id='filter' or contains(@id,'filter'))]" +
                     "//button"
     );
 
-    // Detaylı Arama popup içi
     private final By detailedSearchClearButton = By.xpath("//button[normalize-space()='Temizle']");
     private final By detailedSearchApplyButton = By.xpath("//button[normalize-space()='Uygula']");
 
-    // Yeni Ekle / Düzenle popup form
     private final By ruleDialogForm = By.cssSelector("form.e-data-form");
 
-    // Dialog overlay (Detaylı Arama, Yeni Ekle, Sil onay vb.)
     private final By dialogOverlay = By.cssSelector("div.e-dlg-overlay");
 
-    // Toolbar arama alanı (Ara)
     private final By toolbarSearchContainer = By.cssSelector("div.e-toolbar-item.e-template#search");
 
-    // Grid
     private final By gridContent = By.cssSelector("div.e-gridcontent");
     private final By gridRows = By.cssSelector("#Grid_content_table tbody tr.e-row");
     private final By emptyRow = By.cssSelector("#Grid_content_table tbody tr.e-emptyrow");
 
-    // Sil onay dialogu
     private final By deleteConfirmDialog = By.cssSelector("div[id^='modal-dialog'][class*='e-dlg-container']");
 
     // ==================== GENEL HELPERLAR ======================
@@ -211,12 +203,10 @@ public class AppointmentRulesPage {
         WebElement filter;
 
         try {
-            // 1. deneme: toolbar içindeki filter butonu
             filter = wait.until(
                     ExpectedConditions.elementToBeClickable(filterButton)
             );
         } catch (TimeoutException e) {
-            // 2. deneme: aria-label / ikon üzerinden
             By altFilterButton = By.xpath(
                     "//button[@aria-label='Detaylı Arama' or @title='Detaylı Arama' " +
                             "or .//span[contains(@class,'e-icons') and contains(@class,'e-search')]]"
@@ -229,7 +219,6 @@ public class AppointmentRulesPage {
 
         safeClick(filter);
 
-        // Popup açıldı mı?
         wait.until(ExpectedConditions.visibilityOfElementLocated(detailedSearchClearButton));
     }
 
@@ -341,7 +330,6 @@ public class AppointmentRulesPage {
                 ExpectedConditions.visibilityOfElementLocated(popupLocator)
         );
 
-        // (Varsa) multi-select içindeki arama alanına yazıp filtreleyelim
         try {
             WebElement searchInput = multiselectWrapper.findElement(
                     By.cssSelector("span.e-multi-searcher input")
@@ -362,7 +350,7 @@ public class AppointmentRulesPage {
             String itemLower = itemText.toLowerCase(Locale.ROOT);
 
             if (itemLower.contains(target)) {
-                safeClick(item); // checkbox seçimi
+                safeClick(item);
                 found = true;
                 break;
             }
@@ -372,7 +360,6 @@ public class AppointmentRulesPage {
             throw new NoSuchElementException("Kaynak listesinde istenen değer bulunamadı: " + resourceName);
         }
 
-        // Popup'ı kapatmak için form içine hafif bir tık
         actions.moveToElement(label).click().perform();
     }
 

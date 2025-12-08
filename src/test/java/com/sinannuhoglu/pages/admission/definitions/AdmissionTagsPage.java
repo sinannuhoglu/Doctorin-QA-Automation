@@ -21,7 +21,6 @@ public class AdmissionTagsPage {
     private final WebDriver driver;
     private final WebDriverWait wait;
 
-    // Senaryolar arasında kullanılan son etiket adı (auto-index, düzenleme, silme vs.)
     private String generatedName = null;
 
     public AdmissionTagsPage() {
@@ -104,7 +103,6 @@ public class AdmissionTagsPage {
             }
         }
 
-        // Halen tıklanamıyorsa, son denemede hatayı görebilmek adına direkt tıkla
         element.click();
     }
 

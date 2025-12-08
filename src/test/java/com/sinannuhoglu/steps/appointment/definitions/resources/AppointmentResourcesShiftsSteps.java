@@ -20,10 +20,11 @@ public class AppointmentResourcesShiftsSteps {
     // SEKME & FORM AKIŞI
     // ----------------------------------------------------
 
-    @When("Randevu Kaynakları ekranında kaynak detayında \"Mesailer\" sekmesine tıklar")
-    public void randevuKaynaklariEkranindaKaynakDetayindaMesailerSekmesineTiklar() {
+    @When("Randevu Kaynakları ekranında kaynak detayında Mesailer sekmesine gider")
+    public void randevuKaynaklariEkranindaKaynakDetayindaMesailerSekmesineGider() {
         shiftsPage.openShiftsTab();
     }
+
 
     @When("Mesailer sekmesinde Yeni Ekle butonuna tıklar")
     public void mesailerSekmesindeYeniEkleButonunaTiklar() {

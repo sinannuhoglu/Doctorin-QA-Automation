@@ -887,32 +887,72 @@ public class ResourcesHealthcareResourceManagementPage {
                         "[.//form[contains(@id,'dataform')]]"
         );
 
-        WebElement dialog = wait.until(
-                ExpectedConditions.visibilityOfElementLocated(dialogLocator)
-        );
+        long endTime = System.currentTimeMillis() + Duration.ofSeconds(15).toMillis();
+        int attempt = 0;
 
-        WebElement saveButton = dialog.findElement(By.xpath(
-                ".//button[@type='submit' and contains(@class,'e-primary') and normalize-space()='Kaydet']"
-        ));
+        while (System.currentTimeMillis() < endTime) {
+            attempt++;
 
-        try {
-            wait.until(ExpectedConditions.elementToBeClickable(saveButton)).click();
-        } catch (ElementClickInterceptedException e) {
-            System.out.println(LOG + "Kaydet normal click sırasında popup engelliyor, ESC ile kapatılıyor...");
+            WebElement dialog;
+            WebElement saveButton;
+
             try {
-                new Actions(driver).sendKeys(Keys.ESCAPE).perform();
+                dialog = wait.until(
+                        ExpectedConditions.visibilityOfElementLocated(dialogLocator)
+                );
+            } catch (TimeoutException e) {
+                System.out.println(LOG + "Kaydet denemesi #" + attempt + " sonrasında dialog zaten görünmez durumda.");
+                return;
+            }
+
+            try {
+                saveButton = dialog.findElement(By.xpath(
+                        ".//button[@type='submit' and contains(@class,'e-primary') and normalize-space()='Kaydet']"
+                ));
+            } catch (NoSuchElementException e) {
+                System.out.println(LOG + "Kaydet butonu bulunamadı, dialog kapanmış olabilir. Deneme #" + attempt);
+                return;
+            }
+
+            System.out.println(LOG + "Kaydet butonuna tıklama denemesi: " + attempt);
+
+            try {
                 wait.until(ExpectedConditions.elementToBeClickable(saveButton)).click();
-            } catch (ElementClickInterceptedException e2) {
-                System.out.println(LOG + "Kaydet hâlâ intercept ediliyor, JS ile tıklanacak: " + e2.getMessage());
-                ((JavascriptExecutor) driver).executeScript("arguments[0].click();", saveButton);
+            } catch (ElementClickInterceptedException e) {
+                System.out.println(LOG + "Kaydet normal click sırasında intercept edildi, ESC ile popup kapatılacak ve tekrar denenecek...");
+                try {
+                    new Actions(driver).sendKeys(Keys.ESCAPE).perform();
+                    wait.until(ExpectedConditions.elementToBeClickable(saveButton)).click();
+                } catch (ElementClickInterceptedException e2) {
+                    System.out.println(LOG + "Kaydet hâlâ intercept ediliyor, JS ile tıklanacak: " + e2.getMessage());
+                    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", saveButton);
+                } catch (Exception e2) {
+                    System.out.println(LOG + "Kaydet click denemesinde beklenmeyen hata (ESC sonrası): " + e2.getMessage());
+                }
+            } catch (StaleElementReferenceException e) {
+                System.out.println(LOG + "Kaydet butonu stale oldu, bir sonraki iterasyonda yeniden denenecek. Deneme #" + attempt);
+            } catch (Exception e) {
+                System.out.println(LOG + "Kaydet click denemesinde beklenmeyen hata: " + e.getMessage());
+            }
+
+            try {
+                boolean closed = new WebDriverWait(driver, Duration.ofSeconds(2))
+                        .until(ExpectedConditions.invisibilityOfElementLocated(dialogLocator));
+                if (closed) {
+                    System.out.println(LOG + "Kaydet tıklaması sonrası dialog başarıyla kapandı. Toplam deneme: " + attempt);
+                    return;
+                }
+            } catch (TimeoutException ignored) {
+                System.out.println(LOG + "Dialog henüz kapanmadı, tekrar denenecek. Deneme #" + attempt);
+            }
+
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException ignored) {
             }
         }
 
-        try {
-            wait.until(ExpectedConditions.invisibilityOf(dialog));
-        } catch (TimeoutException ignored) {
-            System.out.println(LOG + "Kaydet sonrası dialog beklenen sürede kapanmadı, test akışı devam ediyor.");
-        }
+        Assert.fail(LOG + "Kaydet butonuna birden çok kez tıklanmasına rağmen dialog 15 sn içinde kapanmadı.");
     }
 
     public void createResourceWithAutoIndex(String baseResourceName,

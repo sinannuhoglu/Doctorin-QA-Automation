@@ -154,7 +154,6 @@ public class AppointmentResourcesOfficialHolidaysPage {
      * (örn: "23 Nisan") içeren satırı döner.
      */
     private WebElement findHolidayRowByName(String holidayName) {
-        // Önce grid’in hazır olduğundan emin ol
         try {
             wait.until(ExpectedConditions.visibilityOfElementLocated(officialHolidaysGridTable));
         } catch (TimeoutException ignored) {

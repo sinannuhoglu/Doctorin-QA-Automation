@@ -3,10 +3,6 @@
 Özellik: Randevu > Tanımlar > Kurallar
   Randevu kurallarının oluşturulması, güncellenmesi ve silinmesi süreçlerinin yönetimi
 
-  # Geçmiş (Background):
-  # - Tüm senaryolarda ortak olan login ve modüle giriş adımları burada toparlanır.
-  # - Böylece her senaryoda tekrar yazmak yerine tek bir kez tanımlanır.
-
   Geçmiş:
     # 1) LOGIN → RANDEVU KURALLARI MODÜLÜ
     Diyelim ki kullanıcı login sayfasını görmektedir

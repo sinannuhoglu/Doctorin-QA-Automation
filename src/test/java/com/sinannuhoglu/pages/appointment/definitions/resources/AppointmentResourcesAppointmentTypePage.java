@@ -368,7 +368,7 @@ public class AppointmentResourcesAppointmentTypePage {
                 continue;
             }
 
-            WebElement adCell = tds.get(1); // 2. sütun
+            WebElement adCell = tds.get(1);
             String adText = adCell.getText();
             if (normalize(adText).contains(typeNorm)) {
                 lastSelectedAppointmentTypeRow = row;
@@ -556,7 +556,6 @@ public class AppointmentResourcesAppointmentTypePage {
         scrollIntoView(multiElement);
         safeClick(multiElement);
 
-        // Dropdown listesi gerçekten açılmış mı, kontrol et
         wait.until(ExpectedConditions.visibilityOfElementLocated(
                 By.cssSelector("ul.e-list-parent")
         ));
@@ -688,7 +687,6 @@ public class AppointmentResourcesAppointmentTypePage {
         } catch (TimeoutException ignored) {
         }
 
-        // 5) Popup’ı kapat
         safeClick(kaynakCell);
     }
 

@@ -17,7 +17,7 @@
 
     # 2) YENİ HİZMET OLUŞTURMA
     Ve Katalog Hizmet Tanımları ekranında Yeni Hizmet butonuna tıklar
-    Ve Katalog Hizmet Tanımları ekranında Hizmet adı alanına "Dahiliye İlk Muayene" bilgisi girilir
+    Ve Katalog Hizmet Tanımları ekranında Hizmet adı alanına "Dahiliye İkinci Muayenesi" bilgisi girilir
     Ve Katalog Hizmet Tanımları ekranında Alt tür alanından "Muayene Hizmeti" değeri seçilir
     Ve Katalog Hizmet Tanımları ekranında KDV oranı alanından "%12" değeri seçilir
     Ve Katalog Hizmet Tanımları ekranında ilk satır için Ücret alanına "200" değeri girilir
@@ -30,8 +30,8 @@
     Ve Katalog Hizmet Tanımları ekranında filtre detay penceresinde Temizle ve ardından Uygula butonlarına tıklar
 
     # 4) KOD İLE ARAMA VE GRID DOĞRULAMASI
-    Ve Katalog Hizmet Tanımları ekranında arama alanına "Dahiliye İlk Muayene" Kodu değeri girilir ve aranır
-    O zaman Katalog Hizmet Tanımları ekranında grid üzerinde "Dahiliye İlk Muayene" kodlu kaydın oluştuğu doğrulanır
+    Ve Katalog Hizmet Tanımları ekranında arama alanına "Dahiliye İkinci Muayenesi" Kodu değeri girilir ve aranır
+    O zaman Katalog Hizmet Tanımları ekranında grid üzerinde "Dahiliye İkinci Muayenesi" kodlu kaydın oluştuğu doğrulanır
 
 
   Senaryo: Var olan hizmet kaydının pasif/aktif durumunun değiştirilmesi
@@ -39,8 +39,8 @@
     # 2) FİLTRELEME VE ARAMA
     Ve Katalog Hizmet Tanımları ekranında filtre butonuna tıklar
     Ve Katalog Hizmet Tanımları ekranında filtre detay penceresinde Temizle ve ardından Uygula butonlarına tıklar
-    Ve Katalog Hizmet Tanımları ekranında arama alanına "Dahiliye İlk Muayene" Kodu değeri girilir ve aranır
-    Ve Katalog Hizmet Tanımları ekranında grid üzerinde "Dahiliye İlk Muayene" kodlu kaydın oluştuğu doğrulanır
+    Ve Katalog Hizmet Tanımları ekranında arama alanına "Dahiliye İkinci Muayenesi" Kodu değeri girilir ve aranır
+    Ve Katalog Hizmet Tanımları ekranında grid üzerinde "Dahiliye İkinci Muayenesi" kodlu kaydın oluştuğu doğrulanır
 
     # 3) AKTİF → PASİF
     Ve Katalog Hizmet Tanımları ekranında grid üzerindeki ilk satırın durum alanının "Aktif" olduğu doğrulanır
@@ -61,8 +61,8 @@
     # 2) KAYDIN BULUNMASI İÇİN FİLTRELEME VE ARAMA
     Ve Katalog Hizmet Tanımları ekranında filtre butonuna tıklar
     Ve Katalog Hizmet Tanımları ekranında filtre detay penceresinde Temizle ve ardından Uygula butonlarına tıklar
-    Ve Katalog Hizmet Tanımları ekranında arama alanına "Dahiliye İlk Muayene" Kodu değeri girilir ve aranır
-    Ve Katalog Hizmet Tanımları ekranında grid üzerinde "Dahiliye İlk Muayene" kodlu kaydın oluştuğu doğrulanır
+    Ve Katalog Hizmet Tanımları ekranında arama alanına "Dahiliye İkinci Muayenesi" Kodu değeri girilir ve aranır
+    Ve Katalog Hizmet Tanımları ekranında grid üzerinde "Dahiliye İkinci Muayenesi" kodlu kaydın oluştuğu doğrulanır
 
     # 3) DÜZENLE PENCERESİNİN AÇILMASI
     Ve Katalog Hizmet Tanımları ekranında ilk satır için üç nokta menüsüne tıklanır
@@ -78,5 +78,4 @@
     # 5) GÜNCELLENEN KAYDIN TEKRAR FİLTRELENMESİ VE BULUNMASI
     Ve Katalog Hizmet Tanımları ekranında filtre butonuna tıklar
     Ve Katalog Hizmet Tanımları ekranında filtre detay penceresinde Temizle ve ardından Uygula butonlarına tıklar
-    # Ve Katalog Hizmet Tanımları ekranında arama alanına "Dahiliye İlk Muayene" Kodu değeri girilir ve aranır
-    O zaman Katalog Hizmet Tanımları ekranında grid üzerinde "Dahiliye İlk Muayene" kodlu kaydın oluştuğu doğrulanır
+    O zaman Katalog Hizmet Tanımları ekranında grid üzerinde "Dahiliye İkinci Muayenesi" kodlu kaydın oluştuğu doğrulanır

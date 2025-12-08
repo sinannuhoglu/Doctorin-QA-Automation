@@ -82,7 +82,7 @@ public class AdmissionPatientSearchSteps {
     // ============== HASTA KABUL EKRANI (VİZİT OLUŞTURMA) ==============
 
     @And("Hasta Kabul ekranında Vizit Tipi alanından {string} seçeneğini seçer")
-    public void hasta_kabul_ekraninda_vizit_tipi_alanindan_secim_yapar(String visitType) {
+    public void hasta_kabul_ekraninda_vizit_tipi_alanindan_secim_yapar(String visitType) throws InterruptedException {
         admissionPage.selectVisitType(visitType);
     }
 

@@ -21,10 +21,8 @@ public class AdmissionVisitTypesPage {
     private final WebDriver driver;
     private final WebDriverWait wait;
 
-    // CREATE & EDIT senaryolarında kullanılan son auto-index isim
     private String generatedName = null;
 
-    // EDIT + DURUM değiştirme senaryosunda grid’de bulunacak satırın mevcut adı
     private String editSourceName = null;
 
     public AdmissionVisitTypesPage() {
@@ -100,7 +98,6 @@ public class AdmissionVisitTypesPage {
             }
         }
 
-        // Hâlâ olmuyorsa son kez tıklayıp exception'ı gör
         element.click();
     }
 
@@ -181,7 +178,6 @@ public class AdmissionVisitTypesPage {
     public void goToVisitTypes(String url) {
         driver.get(url);
 
-        // Sayfanın tam yüklenmesini bekle
         WebDriverWait pageWait = new WebDriverWait(driver, Duration.ofSeconds(30));
         pageWait.until(d -> "complete".equals(
                 ((JavascriptExecutor) d).executeScript("return document.readyState"))

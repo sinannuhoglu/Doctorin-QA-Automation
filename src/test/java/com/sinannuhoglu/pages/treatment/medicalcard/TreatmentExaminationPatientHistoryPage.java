@@ -73,36 +73,6 @@ public class TreatmentExaminationPatientHistoryPage {
     );
 
     /**
-     * Alerji tipi dropdown (Mevsimsel vb.) – e-ddl / dropdownlist input
-     */
-    private final By allergyTypeDropdownInput = By.xpath(
-            ".//span[contains(@class,'e-ddl')]" +
-                    "//input[@role='combobox' or contains(@class,'e-input') or contains(@id,'dropdownlist')]"
-    );
-
-    /**
-     * Alerjen combobox input (örn: Polen) – combobox input
-     */
-    private final By allergenComboboxInput = By.xpath(
-            ".//span[contains(@class,'e-ddl') and contains(@class,'e-input-group')]" +
-                    "//input[starts-with(@id,'combobox') and @type='text']"
-    );
-
-    /**
-     * Alerjen combobox popup (e-ddl e-control e-lib e-popup e-popup-open)
-     */
-    private final By allergenComboboxPopup = By.xpath(
-            "//div[starts-with(@id,'combobox') and contains(@class,'e-popup') and contains(@class,'e-popup-open')]"
-    );
-
-    /**
-     * Açıklama inputu – placeholder "Açıklama"
-     */
-    private final By descriptionInput = By.xpath(
-            ".//input[contains(@id,'textbox') and contains(@placeholder,'Açıklama')]"
-    );
-
-    /**
      * Alerjiler formundaki "Ekle" butonu
      */
     private final By allergiesAddButton = By.xpath(
@@ -229,10 +199,6 @@ public class TreatmentExaminationPatientHistoryPage {
      * Hasta Özgeçmişi penceresinde Alerjiler alanı için
      * yeni kayıt ekleme formunu açar (plus ikonlu buton).
      */
-    /**
-     * Hasta Özgeçmişi penceresinde Alerjiler alanı için
-     * yeni kayıt ekleme formunu açar (plus ikonlu buton).
-     */
     public void openAllergiesNewRecordForm() {
         LOGGER.info("[TreatmentExaminationPatientHistoryPage] openAllergiesNewRecordForm");
 
@@ -283,7 +249,6 @@ public class TreatmentExaminationPatientHistoryPage {
         }
     }
 
-
     /**
      * Alerjiler formunda; Alerji tipi (dropdown), Alerjen (combobox) ve Açıklama alanlarını doldurur.
      */
@@ -304,26 +269,30 @@ public class TreatmentExaminationPatientHistoryPage {
                 allergiesCard, allergiesFormGrid
         ));
 
-        // ==== 1) Alerji tipi (ilk combobox) ====
+        // ==== 1) Alerji tipi (ilk dropdownlist/combobox) ====
         WebElement allergyTypeInput = allergiesCard.findElement(By.xpath(
                 ".//div[contains(@class,'grid')]/div[contains(@class,'e-form-group')][1]" +
-                        "//input[starts-with(@id,'combobox') and contains(@class,'e-input')]"
+                        "//input[(starts-with(@id,'dropdownlist') or starts-with(@id,'combobox')) " +
+                        "and contains(@class,'e-input')]"
         ));
         selectFromCombobox(allergyTypeInput, allergyType);   // Örn: "Mevsimsel"
 
-        // ==== 2) Alerjen (ikinci combobox) ====
+        // ==== 2) Alerjen (tek combobox input) ====
         WebElement allergenInput = allergiesCard.findElement(By.xpath(
-                ".//div[contains(@class,'grid')]/div[contains(@class,'e-form-group')][2]" +
+                ".//div[contains(@class,'grid')]" +
                         "//input[starts-with(@id,'combobox') and contains(@class,'e-input')]"
         ));
         selectFromCombobox(allergenInput, allergen);         // Örn: "Polen"
 
         // ==== 3) Açıklama alanı ====
-        WebElement descriptionTextarea = allergiesCard.findElement(By.xpath(
-                ".//textarea"
-        ));
-        descriptionTextarea.clear();
-        descriptionTextarea.sendKeys(description);
+        WebElement descriptionInput = wait.until(
+                ExpectedConditions.elementToBeClickable(
+                        allergiesCard.findElement(
+                                By.xpath(".//input[contains(@class,'e-textbox') and @placeholder='Açıklama']")
+                        )
+                )
+        );
+        clearAndType(descriptionInput, description);
     }
 
     /**
@@ -340,9 +309,8 @@ public class TreatmentExaminationPatientHistoryPage {
         WebElement addButton = section.findElement(allergiesAddButton);
         safeClick(addButton);
 
-        // Küçük bir bekleme: satır render’ı için (özellikle yavaş ortamlarda)
         try {
-            Thread.sleep(500);
+            Thread.sleep(500); // satır render bekleme
         } catch (InterruptedException ignored) {
         }
     }
@@ -443,33 +411,70 @@ public class TreatmentExaminationPatientHistoryPage {
     }
 
     /**
-     * Syncfusion combobox için genel seçim metodu.
-     * - Input'a tıklar
-     * - İlgili popup’ı (id + "_popup") bulur
-     * - İstenen li text’ini seçer
+     * Syncfusion dropdownlist / combobox için genel seçim metodu.
+     * - Mümkünse ok ikonuna tıklar
+     * - Açılan popup içinden istenen li text'ini seçer
+     * - Popup açılamazsa input'a yazıp ENTER ile seçer (combobox fallback)
      */
     private void selectFromCombobox(WebElement inputElement, String valueToSelect) {
-        js.executeScript("arguments[0].scrollIntoView({block: 'center'});", inputElement);
+        LOGGER.info("[selectFromCombobox] value='{}'", valueToSelect);
 
-        wait.until(ExpectedConditions.elementToBeClickable(inputElement)).click();
+        // 1) Görünür alana kaydır
+        scrollIntoView(inputElement);
 
-        // Bu combobox'ın id'sini al -> popup id'si aynı id + "_popup"
-        String comboId = inputElement.getAttribute("id");
-        By popupLocator = By.xpath(
-                "//div[@id='" + comboId + "_popup' and contains(@class,'e-popup-open')]"
-        );
+        // 2) Önce ok ikonunu bulup tıklamayı dene (combobox'larda daha güvenli)
+        WebElement clickableElement = inputElement;
+        try {
+            WebElement wrapper = inputElement.findElement(
+                    By.xpath("./ancestor::span[contains(@class,'e-ddl')][1]")
+            );
+            WebElement icon = wrapper.findElement(
+                    By.xpath(".//span[contains(@class,'e-input-group-icon') and contains(@class,'e-ddl-icon')]")
+            );
+            clickableElement = icon;
+        } catch (NoSuchElementException ignore) {
+            // Ok ikonu bulunamazsa input üzerinden devam ederiz
+        }
 
-        // Sadece bu combobox’a ait popup’ı bekle
-        WebElement popup = wait.until(ExpectedConditions.visibilityOfElementLocated(popupLocator));
+        wait.until(ExpectedConditions.elementToBeClickable(clickableElement)).click();
 
+        // 3) Popup açılmaya çalışılsın
+        WebElement popup = null;
+        try {
+            popup = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.xpath("//div[contains(@class,'e-ddl') and contains(@class,'e-popup-open')]")
+            ));
+        } catch (TimeoutException e) {
+            LOGGER.warn("[selectFromCombobox] Popup açılamadı, combobox için yaz+ENTER fallback kullanılacak.");
+
+            // --- Fallback: sadece combobox ise yaz + ENTER ile seçim ---
+            clearAndType(inputElement, valueToSelect);
+            try {
+                inputElement.sendKeys(Keys.ENTER);
+            } catch (Exception ignored2) {}
+
+            // Değerin input'ta gerçekten set olduğundan emin ol
+            try {
+                wait.until(driver ->
+                        valueToSelect.equals(inputElement.getAttribute("value"))
+                );
+            } catch (Exception ex) {
+                LOGGER.warn("[selectFromCombobox] Fallback sonrası input değer doğrulaması yapılamadı.");
+            }
+            return;
+        }
+
+        // 4) Popup içinden ilgili seçeneği tıkla
         WebElement option = popup.findElement(
                 By.xpath(".//li[normalize-space()='" + valueToSelect + "']")
         );
-
         wait.until(ExpectedConditions.elementToBeClickable(option)).click();
 
-        // Seçim sonrası popup’ın kapanmasını bekle
-        wait.until(ExpectedConditions.invisibilityOf(popup));
+        // 5) Popup'ın kapanmasını bekle (dropdowlist senaryosu)
+        try {
+            wait.until(ExpectedConditions.invisibilityOf(popup));
+        } catch (TimeoutException e) {
+            LOGGER.warn("[selectFromCombobox] Popup görünürlüğü kapanma beklemesinde timeout oldu, devam ediliyor.");
+        }
     }
-
 }

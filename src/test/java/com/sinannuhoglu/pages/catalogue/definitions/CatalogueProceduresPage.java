@@ -28,25 +28,19 @@ public class CatalogueProceduresPage {
     private final WebDriverWait wait;
     private final JavascriptExecutor js;
 
-    // Yeni Hizmet / Düzenle popup form
     private final By procedureDialogForm = By.cssSelector("form.e-data-form");
     private final By dialogOverlay = By.cssSelector("div.e-dlg-overlay");
 
-    // Fiyat gridinin bulunduğu alan için container
     private final By priceGridContainer = By.cssSelector("div.e-gridcontent, div[id^='acrdn_panel']");
 
-    // Toolbar detaylı filtre butonu
     private final By detailedFilterButton = By.cssSelector("button[data-testid='detailed-filter-button']");
 
-    // Toolbar arama alanı
     private final By toolbarSearchInput = By.cssSelector("input#search-input[name='search-input']");
 
-    // Ana grid içerik alanı
     private final By mainGridContent = By.cssSelector("div.e-gridcontent");
     private final By mainGridRows = By.cssSelector("div.e-gridcontent tbody tr.e-row");
     private final By mainGridEmptyRow = By.cssSelector("div.e-gridcontent tbody tr.e-emptyrow");
 
-    // Grid ilk satır durum ve aksiyon (3 nokta menüsü) alanları
     private final By firstRowStatusCell = By.xpath(
             "//div[contains(@class,'e-gridcontent')]//tbody/tr[1]/td[7]"
     );
@@ -155,7 +149,6 @@ public class CatalogueProceduresPage {
             }
         }
 
-        // Son çare: JS ile değer set et ve event’leri tetikle
         js.executeScript(
                 "arguments[0].value = arguments[1];" +
                         "arguments[0].dispatchEvent(new Event('input', {bubbles:true}));" +

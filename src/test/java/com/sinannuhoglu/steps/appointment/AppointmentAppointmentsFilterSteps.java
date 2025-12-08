@@ -132,4 +132,9 @@ public class AppointmentAppointmentsFilterSteps {
     public void randevularEkranindaEtkinlikDetayiPenceresindeSilButonunaTiklar() {
         appointmentsPage.deleteClosingEventFromQuickPopup();
     }
+
+    @And("Randevular ekranında Hasta Kabul penceresinin yüklenmesini bekler")
+    public void randevularEkranindaHastaKabulPenceresininYuklenmesiniBekler() {
+        appointmentsPage.waitAdmissionSidebarReadyForStep();
+    }
 }

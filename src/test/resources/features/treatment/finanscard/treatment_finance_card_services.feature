@@ -59,6 +59,6 @@
     Ve Finans kartinda Indirim penceresinde "200" tutarini girer
     Ve Finans kartinda Indirim penceresinde degeri guncellemek icin Tutar secenegini tekrar secer
     Ve Finans kartinda Indirim penceresinde Kaydet butonuna tiklar
-    #Ve Finans kartinda Indirim listesi penceresini acar
-    #Ve Finans kartinda Indirim listesinde "200" tutarli bugunun tarihli kaydin bulundugu satir icin uc nokta menusunden Iptal Et secenegini secer
-    #O zaman Finans kartinda Indirim listesinde "200" tutarli bugunun tarihli kaydin silindigi dogrulanir
+    Ve Finans kartinda Indirim listesi penceresini acar
+    Ve Finans kartinda Indirim listesinde "200" tutarli bugunun tarihli kaydin bulundugu satir icin uc nokta menusunden Iptal Et secenegini secer
+    O zaman Finans kartinda Indirim listesinde "200" tutarli bugunun tarihli kaydin silindigi dogrulanir

@@ -9,13 +9,10 @@ public class AppointmentTypesSteps {
 
     private final AppointmentTypesPage appointmentTypesPage = new AppointmentTypesPage();
 
-    // CREATE senaryosunda hesaplanan auto-index'li isim
     private String autoAppointmentTypeName;
 
-    // EDIT senaryosunda kullanılacak yeni auto-index isim
     private String editAutoAppointmentTypeName;
 
-    // Aktif/pasif senaryosu için hedef kayıt adı
     private String statusToggleTargetName;
 
     // ============== NAVIGATION ==================

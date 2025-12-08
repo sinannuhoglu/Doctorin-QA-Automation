@@ -74,14 +74,21 @@ public class TreatmentFinanceCardDiscountPage {
 
     /**
      * "İndirim (x)" başlığını içeren kartın root container’ını döner.
-     * (flex flex-col ... yapısı)
+     * Kart: bg-white rounded-xl ... yapısındaki beyaz kart.
      */
     private WebElement getDiscountCardRoot() {
-        By cardLocator = By.xpath(
-                "//p[contains(@class,'text-sm') and contains(normalize-space(),'İndirim')]" +
-                        "/ancestor::div[contains(@class,'flex') and contains(@class,'flex-col')][1]"
+        By cardContainer = By.xpath(
+                "//p[contains(@class,'text-sm') and " +
+                        "contains(@class,'font-medium') and " +
+                        "contains(normalize-space(),'İndirim')]" +
+                        "/ancestor::div[contains(@class,'bg-white') and " +
+                        "contains(@class,'rounded-xl')][1]"
         );
-        WebElement card = wait.until(ExpectedConditions.visibilityOfElementLocated(cardLocator));
+
+        WebElement card = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(cardContainer)
+        );
+
         js.executeScript("arguments[0].scrollIntoView({block:'center'});", card);
         return card;
     }
@@ -96,58 +103,77 @@ public class TreatmentFinanceCardDiscountPage {
     }
 
     /**
-     * Verilen elemente güvenli click (gerekirse JS fallback).
+     * Verilen elemente güvenli click (gerekirse JS ve tekrar denemeli).
      */
     private void safeClick(WebElement element) {
-        try {
-            wait.until(ExpectedConditions.elementToBeClickable(element));
-            element.click();
-        } catch (ElementNotInteractableException e) {
-            LOGGER.warn("[Finans/İndirim] Normal click başarısız, JS click denenecek. Hata: {}",
-                    e.getClass().getSimpleName());
-            js.executeScript("arguments[0].click();", element);
+        for (int i = 0; i < 3; i++) {
+            try {
+                wait.until(ExpectedConditions.elementToBeClickable(element));
+                element.click();
+                return;
+            } catch (StaleElementReferenceException e) {
+                LOGGER.warn("[Finans/İndirim] safeClick -> stale element, deneme: {}", i + 1);
+                sleep(300);
+            } catch (ElementNotInteractableException e) {
+                LOGGER.warn("[Finans/İndirim] safeClick -> normal click başarısız, JS denenecek. Deneme: {} Hata: {}",
+                        i + 1, e.getClass().getSimpleName());
+                try {
+                    js.executeScript("arguments[0].click();", element);
+                    return;
+                } catch (Exception ignore) {
+                    sleep(300);
+                }
+            } catch (TimeoutException e) {
+                LOGGER.warn("[Finans/İndirim] safeClick -> clickable timeout, JS click fallback. Deneme: {}", i + 1);
+                try {
+                    js.executeScript("arguments[0].click();", element);
+                    return;
+                } catch (Exception ignore) {
+                    sleep(300);
+                }
+            }
         }
+
+        // Son çare
+        LOGGER.warn("[Finans/İndirim] safeClick -> tüm denemeler başarısız, son kez JS click deneniyor.");
+        js.executeScript("arguments[0].click();", element);
     }
 
     /**
      * İndirim kartı üzerindeki + butonuna tıklar.
-     * (span class="hio hio-plus e-btn-icon" içeren button)
      */
     private void clickDiscountPlusButton() {
         LOGGER.info("[Finans/İndirim] Kart üzerindeki + butonuna tıklanıyor...");
+
         WebElement card = getDiscountCardRoot();
 
         WebElement plusButton = card.findElement(By.xpath(
-                ".//button[.//span[contains(@class,'hio-plus') and contains(@class,'e-btn-icon')]]"
+                ".//button[contains(@class,'e-control') and contains(@class,'e-btn') " +
+                        "and contains(@class,'e-icon-btn')]" +
+                        "[.//span[contains(@class,'hio-plus') and contains(@class,'e-btn-icon')]]"
         ));
 
+        LOGGER.info("[Finans/İndirim] + butonu bulundu, safeClick ile tıklanacak.");
         safeClick(plusButton);
+
         LOGGER.info("[Finans/İndirim] + butonuna tıklandı.");
     }
 
+
     /**
      * İndirim kartı üzerindeki sağ ok (liste) butonuna tıklar.
-     * (span class="hio hio-arrow-rtl e-btn-icon" içeren button)
+     * (aynı bg-white rounded-xl container altındaki hio-arrow-rtl ikonlu buton)
      */
     private void clickDiscountArrowButton() {
         LOGGER.info("[Finans/İndirim] Kart üzerindeki sağ ok butonuna tıklanıyor...");
 
         WebElement card = getDiscountCardRoot();
 
-        By arrowButtonInCard = By.xpath(
-                ".//button[.//span[contains(@class,'hio-arrow-rtl') and contains(@class,'e-btn-icon')]]"
-        );
-
-        WebElement arrowButton = new WebDriverWait(driver, Duration.ofSeconds(10))
-                .until(drv -> {
-                    try {
-                        WebElement currentCard = getDiscountCardRoot();
-                        WebElement btn = currentCard.findElement(arrowButtonInCard);
-                        return (btn.isDisplayed() ? btn : null);
-                    } catch (NoSuchElementException | StaleElementReferenceException e) {
-                        return null;
-                    }
-                });
+        WebElement arrowButton = card.findElement(By.xpath(
+                ".//button[contains(@class,'e-control') and contains(@class,'e-btn') " +
+                        "and contains(@class,'e-icon-btn')]" +
+                        "[.//span[contains(@class,'hio-arrow-rtl') and contains(@class,'e-btn-icon')]]"
+        ));
 
         safeClick(arrowButton);
 

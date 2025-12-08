@@ -9,13 +9,10 @@ public class AdmissionTagsSteps {
 
     private final AdmissionTagsPage tagsPage = new AdmissionTagsPage();
 
-    // 1. senaryo (yeni kayıt) için auto index ile oluşturulan etiket adı
     private String autoTagName;
 
-    // 2. senaryo (düzenleme) için index artırılmış yeni başlık
     private String editedTagName;
 
-    // 3. senaryo (silme) için kullanılacak etiket adı
     private String deleteTagName;
 
     // ============== NAVIGATION ==================

@@ -39,7 +39,6 @@ public class AppointmentResourcesLeavesPage {
             "//button[.//span[normalize-space()='Yeni Ekle'] or normalize-space()='Yeni Ekle']"
     );
 
-    // Aktif izin dialog'u (formun bağlı olduğu e-dialog)
     private final By leavesDialogRoot = By.xpath(
             "//div[contains(@class,'e-dialog') and contains(@class,'e-popup-open')]" +
                     "//form[contains(@class,'e-data-form')]/ancestor::div[contains(@class,'e-dialog')]"
@@ -50,7 +49,6 @@ public class AppointmentResourcesLeavesPage {
                     "//form[contains(@class,'e-data-form')]"
     );
 
-    // Aktif datepicker popup (takvim)
     private final By datepickerPopup = By.cssSelector(
             "div.e-control.e-datepicker.e-lib.e-popup-wrapper.e-popup-container.e-popup-open[role='dialog']"
     );
@@ -518,7 +516,6 @@ public class AppointmentResourcesLeavesPage {
                 safeClick(saveButton);
                 System.out.println("[Leaves] Kaydet butonuna tıklandı.");
 
-                // Dialog’un kapanmasını bekle
                 wait.until(ExpectedConditions.stalenessOf(dialog));
                 System.out.println("[Leaves] İzinler pop-up penceresi kapandı.");
 
@@ -599,7 +596,6 @@ public class AppointmentResourcesLeavesPage {
     }
 
     // ---------------------------- SİLME AKIŞI ----------------------------
-
     /**
      * Verilen tarih + saat aralığı + açıklamaya sahip satırın
      * 4. sütunundaki üç nokta menüsünden "Sil" seçeneğine tıklar.
@@ -620,9 +616,17 @@ public class AppointmentResourcesLeavesPage {
         scrollIntoView(row);
 
         WebElement actionsCell = row.findElement(By.xpath("./td[4]"));
-        WebElement caretIcon = actionsCell.findElement(
-                By.cssSelector("button span.e-btn-icon.e-icons.e-caret")
+
+        WebElement iconSpan = actionsCell.findElement(
+                By.cssSelector("button span.e-icons.e-more-horizontal-1")
         );
+
+        WebElement menuButton;
+        try {
+            menuButton = iconSpan.findElement(By.xpath("./ancestor::button"));
+        } catch (NoSuchElementException e) {
+            menuButton = actionsCell.findElement(By.cssSelector("button"));
+        }
 
         int attempts = 0;
         while (attempts < 3) {
@@ -632,35 +636,41 @@ public class AppointmentResourcesLeavesPage {
                         .moveToElement(actionsCell)
                         .perform();
 
-                js().executeScript("arguments[0].click();", caretIcon);
-                System.out.println("[Leaves] Üç nokta menüsü caret ikonuna tıklandı. Deneme: " + attempts);
+                safeClick(menuButton);
+                System.out.println("[Leaves] Üç nokta menüsü butonuna tıklandı. Deneme: " + attempts);
 
-                By menuUlBy = By.xpath(
-                        "//ul[contains(@class,'e-dropdown-menu') and @role='menu']"
+                By dialogBy = By.xpath(
+                        "//div[@role='dialog' and .//span[contains(@class,'hio-trash')]]"
                 );
 
-                WebElement menu = wait.until(
-                        ExpectedConditions.visibilityOfElementLocated(menuUlBy)
+                WebElement dialog = wait.until(
+                        ExpectedConditions.visibilityOfElementLocated(dialogBy)
                 );
 
-                By deleteLiBy = By.xpath(
-                        ".//li[.//span[normalize-space()='Sil'] or normalize-space()='Sil']"
+                By deleteButtonBy = By.xpath(
+                        ".//button[" +
+                                ".//span[contains(@class,'hio-trash')] " +
+                                "or normalize-space()='Sil' " +
+                                "or .//span[normalize-space()='Sil']" +
+                                "]"
                 );
 
-                WebElement deleteLi = menu.findElement(deleteLiBy);
-                safeClick(deleteLi);
+                WebElement deleteButton = dialog.findElement(deleteButtonBy);
+                scrollIntoView(deleteButton);
+                safeClick(deleteButton);
 
                 System.out.println("[Leaves] Üç nokta menüsünden 'Sil' seçeneğine tıklandı.");
                 return;
 
-            } catch (TimeoutException | StaleElementReferenceException e) {
-                System.out.println("[Leaves] Üç nokta menüsü açılamadı / 'Sil' bulunamadı. Retry: " + attempts
-                        + " -> " + e.getClass().getSimpleName());
+            } catch (TimeoutException | StaleElementReferenceException | NoSuchElementException e) {
+                System.out.println("[Leaves] Üç nokta menüsü / 'Sil' seçimi başarısız. Retry: "
+                        + attempts + " -> " + e.getClass().getSimpleName());
             }
         }
 
         throw new RuntimeException("[Leaves] Üç nokta menüsü veya 'Sil' seçeneği 3 denemede de açılamadı.");
     }
+
 
     /**
      * Silme onay penceresinde 'Evet' butonuna tıklar ve
