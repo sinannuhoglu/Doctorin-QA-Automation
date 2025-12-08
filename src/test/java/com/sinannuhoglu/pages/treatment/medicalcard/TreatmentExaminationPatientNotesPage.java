@@ -153,7 +153,6 @@ public class TreatmentExaminationPatientNotesPage {
             js.executeScript("arguments[0].click();", el);
         }
 
-        // CTRL+A ve CMD+A ile tümünü seç
         try {
             el.sendKeys(Keys.chord(Keys.CONTROL, "a")); // Windows / Linux
             el.sendKeys(Keys.chord(Keys.COMMAND, "a")); // Mac
@@ -162,7 +161,6 @@ public class TreatmentExaminationPatientNotesPage {
         } catch (Exception ignored) {
         }
 
-        // Hala içerik varsa karakter karakter sil
         try {
             String current = el.getAttribute("value");
             if (current != null && !current.isEmpty()) {
@@ -179,7 +177,6 @@ public class TreatmentExaminationPatientNotesPage {
 
     private String getTodayDateForNote() {
         LocalDate today = LocalDate.now();
-        // Örnek format: 06/11/2025
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         return today.format(formatter);
     }
@@ -206,13 +203,10 @@ public class TreatmentExaminationPatientNotesPage {
     public void openPatientNotePanel() {
         LOGGER.info("[TreatmentExaminationPatientNotesPage] openPatientNotePanel");
 
-        // Muayene kartlarının yüklendiğini bekle (sayfa açılışını garanti etmek için)
         wait.until(ExpectedConditions.visibilityOfElementLocated(examinationCardsContainer));
 
-        // "Hasta Notu" kartındaki ikon butona tıkla
         safeClick(patientNoteCardButton);
 
-        // Panelin açıldığını doğrula
         wait.until(ExpectedConditions.visibilityOfElementLocated(patientNotePanel));
         wait.until(ExpectedConditions.visibilityOfElementLocated(patientNoteTextarea));
     }
@@ -231,7 +225,6 @@ public class TreatmentExaminationPatientNotesPage {
 
         clearAndType(textarea, noteText);
 
-        // DEBUG: gerçekten ne yazılmış görelim
         try {
             String value = textarea.getAttribute("value");
             LOGGER.info("[TreatmentExaminationPatientNotesPage] Paneldeki textarea değeri: >{}<", value);
@@ -248,7 +241,6 @@ public class TreatmentExaminationPatientNotesPage {
 
         safeClick(saveNoteButton);
 
-        // Listeye yansıması için kısa bir bekleme + container görünürlüğü
         try {
             Thread.sleep(1000);
         } catch (InterruptedException ignored) {
@@ -274,14 +266,12 @@ public class TreatmentExaminationPatientNotesPage {
             js.executeScript("arguments[0].click();", btn);
         }
 
-        // Panel kapanıyorsa bunu bekleyelim
         try {
             wait.until(ExpectedConditions.invisibilityOfElementLocated(patientNotePanel));
         } catch (TimeoutException e) {
             LOGGER.warn("[TreatmentExaminationPatientNotesPage] Hasta notu paneli kapanmadı, yine de devam edilecek.");
         }
 
-        // Liste görünürlüğünü garanti et
         wait.until(ExpectedConditions.visibilityOfElementLocated(notesHistoryContainer));
     }
 
@@ -293,7 +283,6 @@ public class TreatmentExaminationPatientNotesPage {
 
         safeClick(updateNoteButton);
 
-        // Güncellenen notun listede görünmesini bekle
         String noteXpath =
                 "//div[contains(@class,'flex-col') and contains(@class,'gap-4') and contains(@class,'overflow-y-auto')]" +
                         "//div[contains(@class,'bg-white') and contains(@class,'dark:bg-surface-800') and contains(@class,'p-4')]" +
@@ -368,7 +357,6 @@ public class TreatmentExaminationPatientNotesPage {
             return dateElement.isDisplayed();
         } catch (TimeoutException e) {
             LOGGER.warn("[TreatmentExaminationPatientNotesPage] Tarih alanı bulunamadı, sadece not metni ile doğrulama yapılacak. Note='{}'", noteText);
-            // Sadece not görünürlüğünü kontrol et
             return isPatientNoteVisible(noteText);
         }
     }
@@ -408,7 +396,6 @@ public class TreatmentExaminationPatientNotesPage {
 
         safeClick(deleteButton);
 
-        // Silme işlemi sonrası listenin güncellenmesi için küçük bekleme
         try {
             Thread.sleep(1000);
         } catch (InterruptedException ignored) {
@@ -429,7 +416,6 @@ public class TreatmentExaminationPatientNotesPage {
 
         try {
             driver.findElement(By.xpath(noteXpath));
-            // Bulunuyorsa false
             return false;
         } catch (NoSuchElementException e) {
             return true;

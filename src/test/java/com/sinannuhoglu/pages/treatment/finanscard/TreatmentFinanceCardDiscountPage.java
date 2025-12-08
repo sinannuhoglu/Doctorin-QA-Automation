@@ -74,7 +74,6 @@ public class TreatmentFinanceCardDiscountPage {
 
     /**
      * "İndirim (x)" başlığını içeren kartın root container’ını döner.
-     * Kart: bg-white rounded-xl ... yapısındaki beyaz kart.
      */
     private WebElement getDiscountCardRoot() {
         By cardContainer = By.xpath(
@@ -162,7 +161,6 @@ public class TreatmentFinanceCardDiscountPage {
 
     /**
      * İndirim kartı üzerindeki sağ ok (liste) butonuna tıklar.
-     * (aynı bg-white rounded-xl container altındaki hio-arrow-rtl ikonlu buton)
      */
     private void clickDiscountArrowButton() {
         LOGGER.info("[Finans/İndirim] Kart üzerindeki sağ ok butonuna tıklanıyor...");
@@ -228,16 +226,13 @@ public class TreatmentFinanceCardDiscountPage {
 
     /**
      * Numeric textbox içindeki value ile beklenen amount eşleşiyor mu?
-     * (200 → "200", "200,00", "200,0" vs. hepsini normalize ederek kontrol ediyoruz)
      */
     private boolean numericValueMatches(String currentValue, String expectedPlain) {
         if (currentValue == null) return false;
 
-        // Sadece rakamları karşılaştıralım (format farklarını göz ardı etmek için)
         String curDigits = currentValue.replaceAll("\\D", "");
         String expDigits = expectedPlain.replaceAll("\\D", "");
 
-        // Son kısımda beklediğimiz tutar olmalı (örn. 00200 vs 200;)
         return !curDigits.isEmpty() && curDigits.endsWith(expDigits);
     }
 

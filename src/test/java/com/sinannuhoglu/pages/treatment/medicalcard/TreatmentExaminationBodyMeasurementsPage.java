@@ -117,14 +117,12 @@ public class TreatmentExaminationBodyMeasurementsPage {
             js.executeScript("arguments[0].click();", input);
         }
 
-        // CTRL+A + DELETE ile temizleme
         try {
             input.sendKeys(Keys.chord(Keys.CONTROL, "a"));
             input.sendKeys(Keys.DELETE);
         } catch (Exception ignored) {
         }
 
-        // Hala değer varsa BACK_SPACE ile silmeye çalış
         try {
             String current = input.getAttribute("value");
             if (current != null && !current.isEmpty()) {
@@ -161,7 +159,6 @@ public class TreatmentExaminationBodyMeasurementsPage {
         );
         safeClick(btn);
 
-        // Dialog'un açılmasını bekle
         getBodyMeasurementsDialog();
     }
 
@@ -177,12 +174,10 @@ public class TreatmentExaminationBodyMeasurementsPage {
         WebElement header = item.findElement(historyAccordionHeader);
 
         String expanded = item.getAttribute("aria-expanded");
-        // Kapalıysa aç
         if (expanded == null || !"true".equalsIgnoreCase(expanded)) {
             safeClick(header);
         }
 
-        // Panelin açıldığından emin ol
         By visiblePanelRows = By.xpath(
                 ".//div[contains(@class,'e-acrdn-panel') and @role='region' and @aria-hidden='false']" +
                         "//tbody/tr"
@@ -224,7 +219,6 @@ public class TreatmentExaminationBodyMeasurementsPage {
 
         WebElement firstRow = rows.get(0);
 
-        // 1. sütundaki tarih
         WebElement dateCell = firstRow.findElement(
                 By.xpath("./td[1]//*[self::span or self::p or self::div]")
         );
@@ -236,13 +230,11 @@ public class TreatmentExaminationBodyMeasurementsPage {
             return;
         }
 
-        // 6. sütundaki sil butonu (son sütun)
         WebElement deleteButton = firstRow.findElement(
                 By.xpath("./td[last()]//button")
         );
         safeClick(deleteButton);
 
-        // Satırın silinmesini bekle
         try {
             new WebDriverWait(driver, Duration.ofSeconds(5))
                     .until(ExpectedConditions.stalenessOf(firstRow));

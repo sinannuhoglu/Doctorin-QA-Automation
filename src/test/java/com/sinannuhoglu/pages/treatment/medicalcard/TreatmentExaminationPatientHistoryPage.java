@@ -89,7 +89,6 @@ public class TreatmentExaminationPatientHistoryPage {
     }
 
     private By buildAllergyRowLocator(String allergen, String description) {
-        // NOT: td[1] = Alerjen, td[3] = Açıklama (UI yapısına göre)
         String xpath = "//div[starts-with(@id,'modal-dialog') and contains(@class,'e-dlg-container')]"
                 + "//div[contains(@class,'break-inside-avoid-column') and contains(@class,'mb-4')]"
                 + "[.//h4[contains(normalize-space(),'Alerjiler')]]"
@@ -176,20 +175,16 @@ public class TreatmentExaminationPatientHistoryPage {
     public void openPatientHistoryPanel() {
         LOGGER.info("[TreatmentExaminationPatientHistoryPage] openPatientHistoryPanel");
 
-        // Muayene kartlarının yüklendiğini bekle
         wait.until(ExpectedConditions.visibilityOfElementLocated(examinationCardsContainer));
 
-        // Hasta Özgeçmişi kartını ikonuna göre bul
         WebElement card = wait.until(
                 ExpectedConditions.visibilityOfElementLocated(patientHistoryCard)
         );
         scrollIntoView(card);
 
-        // Kart içindeki e-icon-btn (sağdaki ok butonu) tıklanır
         WebElement openButton = card.findElement(patientHistoryCardIconButtonInsideCard);
         safeClick(openButton);
 
-        // Panel açıldı mı? "Alerjiler" bölümünün gelmesini beklemek yeterli
         wait.until(ExpectedConditions.visibilityOfElementLocated(allergiesSection));
     }
 
@@ -202,25 +197,21 @@ public class TreatmentExaminationPatientHistoryPage {
     public void openAllergiesNewRecordForm() {
         LOGGER.info("[TreatmentExaminationPatientHistoryPage] openAllergiesNewRecordForm");
 
-        // Küçük retry: DOM içeriği add butonuna tıklayınca yeniden çizildiği için
         RuntimeException lastException = null;
 
         for (int i = 0; i < 3; i++) {
             try {
-                // 1) Alerjiler bölümünü bul
                 WebElement section = wait.until(
                         ExpectedConditions.visibilityOfElementLocated(allergiesSection)
                 );
 
                 scrollIntoView(section);
 
-                // 2) Plus ikonlu "yeni ekle" butonuna tıkla
                 WebElement addButton = section.findElement(
                         By.xpath(".//button[.//i[contains(@class,'hio-plus')]]")
                 );
                 safeClick(addButton);
 
-                // 3) Form grid'in yeni DOM'da görünmesini tam xpath ile bekle
                 By gridLocator = By.xpath(
                         "//div[starts-with(@id,'modal-dialog') and contains(@class,'e-dlg-container')]" +
                                 "//div[contains(@class,'break-inside-avoid-column') and contains(@class,'mb-4')]" +
@@ -264,27 +255,23 @@ public class TreatmentExaminationPatientHistoryPage {
                 ".//div[contains(@class,'break-inside-avoid-column') and .//h4[contains(normalize-space(),'Alerjiler')]]"
         ));
 
-        // Grid'in gerçekten render olmasını bekle
         wait.until(ExpectedConditions.visibilityOfNestedElementsLocatedBy(
                 allergiesCard, allergiesFormGrid
         ));
 
-        // ==== 1) Alerji tipi (ilk dropdownlist/combobox) ====
         WebElement allergyTypeInput = allergiesCard.findElement(By.xpath(
                 ".//div[contains(@class,'grid')]/div[contains(@class,'e-form-group')][1]" +
                         "//input[(starts-with(@id,'dropdownlist') or starts-with(@id,'combobox')) " +
                         "and contains(@class,'e-input')]"
         ));
-        selectFromCombobox(allergyTypeInput, allergyType);   // Örn: "Mevsimsel"
+        selectFromCombobox(allergyTypeInput, allergyType);
 
-        // ==== 2) Alerjen (tek combobox input) ====
         WebElement allergenInput = allergiesCard.findElement(By.xpath(
                 ".//div[contains(@class,'grid')]" +
                         "//input[starts-with(@id,'combobox') and contains(@class,'e-input')]"
         ));
-        selectFromCombobox(allergenInput, allergen);         // Örn: "Polen"
+        selectFromCombobox(allergenInput, allergen);
 
-        // ==== 3) Açıklama alanı ====
         WebElement descriptionInput = wait.until(
                 ExpectedConditions.elementToBeClickable(
                         allergiesCard.findElement(
@@ -316,7 +303,6 @@ public class TreatmentExaminationPatientHistoryPage {
     }
 
     private String getAllergyRowXpath(String allergen, String description) {
-        // Alerjiler bölümündeki table-fixed tablo içinde:
         return "//div[starts-with(@id,'modal-dialog') and contains(@class,'e-dlg-container')]" +
                 "//div[contains(@class,'break-inside-avoid-column') and contains(@class,'mb-4')]" +
                 "[.//h4[contains(normalize-space(),'Alerjiler')]]" +
@@ -380,7 +366,6 @@ public class TreatmentExaminationPatientHistoryPage {
 
         safeClick(deleteButton);
 
-        // Satırın kaybolmasını bekle
         try {
             wait.until(ExpectedConditions.stalenessOf(row));
         } catch (TimeoutException e) {
@@ -419,10 +404,8 @@ public class TreatmentExaminationPatientHistoryPage {
     private void selectFromCombobox(WebElement inputElement, String valueToSelect) {
         LOGGER.info("[selectFromCombobox] value='{}'", valueToSelect);
 
-        // 1) Görünür alana kaydır
         scrollIntoView(inputElement);
 
-        // 2) Önce ok ikonunu bulup tıklamayı dene (combobox'larda daha güvenli)
         WebElement clickableElement = inputElement;
         try {
             WebElement wrapper = inputElement.findElement(
@@ -438,7 +421,6 @@ public class TreatmentExaminationPatientHistoryPage {
 
         wait.until(ExpectedConditions.elementToBeClickable(clickableElement)).click();
 
-        // 3) Popup açılmaya çalışılsın
         WebElement popup = null;
         try {
             popup = wait.until(ExpectedConditions.visibilityOfElementLocated(
@@ -447,13 +429,11 @@ public class TreatmentExaminationPatientHistoryPage {
         } catch (TimeoutException e) {
             LOGGER.warn("[selectFromCombobox] Popup açılamadı, combobox için yaz+ENTER fallback kullanılacak.");
 
-            // --- Fallback: sadece combobox ise yaz + ENTER ile seçim ---
             clearAndType(inputElement, valueToSelect);
             try {
                 inputElement.sendKeys(Keys.ENTER);
             } catch (Exception ignored2) {}
 
-            // Değerin input'ta gerçekten set olduğundan emin ol
             try {
                 wait.until(driver ->
                         valueToSelect.equals(inputElement.getAttribute("value"))
@@ -464,13 +444,11 @@ public class TreatmentExaminationPatientHistoryPage {
             return;
         }
 
-        // 4) Popup içinden ilgili seçeneği tıkla
         WebElement option = popup.findElement(
                 By.xpath(".//li[normalize-space()='" + valueToSelect + "']")
         );
         wait.until(ExpectedConditions.elementToBeClickable(option)).click();
 
-        // 5) Popup'ın kapanmasını bekle (dropdowlist senaryosu)
         try {
             wait.until(ExpectedConditions.invisibilityOf(popup));
         } catch (TimeoutException e) {

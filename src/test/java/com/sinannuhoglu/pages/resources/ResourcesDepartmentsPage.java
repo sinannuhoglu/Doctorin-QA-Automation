@@ -529,22 +529,18 @@ public class ResourcesDepartmentsPage {
      * DROPDOWN SEÇİMİNİ DAHA DAYANIKLI HALE GETİRİLMİŞ HALİ
      */
     private void selectFromDropdownInDialog(String labelText, String optionText) {
-        // İlgili label'a ait form-group bulunur
         WebElement formGroup = driver.findElement(By.xpath(
                 "//div[contains(@id,'modal-dialog')]//label[normalize-space()='" + labelText + "']" +
                         "/ancestor::div[contains(@class,'e-form-group')]"
         ));
 
-        // İkon için hem klasik e-ddl-icon hem de input-group-icon kombinasyonunu dene
         WebElement icon = null;
         try {
             icon = formGroup.findElement(By.cssSelector("span.e-ddl .e-ddl-icon"));
         } catch (NoSuchElementException e) {
-            // Bazı ekranlarda sınıf yapısı farklı olabilir
             icon = formGroup.findElement(By.cssSelector("span.e-input-group-icon.e-ddl-icon"));
         }
 
-        // Dropdown'u aç
         try {
             wait.until(ExpectedConditions.elementToBeClickable(icon)).click();
         } catch (Exception ex) {
@@ -552,7 +548,6 @@ public class ResourcesDepartmentsPage {
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", icon);
         }
 
-        // Popup container'a özel CSS'e bağımlı kalmak yerine doğrudan li.e-list-item'a wait et
         By optionLocator = By.xpath(
                 "//li[contains(@class,'e-list-item')][normalize-space()='" + optionText + "']"
         );
@@ -562,7 +557,6 @@ public class ResourcesDepartmentsPage {
 
         option.click();
 
-        // Dropdown'un kapanmasını option elementinin kaybolması üzerinden takip et
         try {
             new WebDriverWait(driver, Duration.ofSeconds(5))
                     .until(ExpectedConditions.invisibilityOfElementLocated(optionLocator));

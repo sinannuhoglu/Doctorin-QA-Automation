@@ -21,8 +21,8 @@ public class TreatmentFinanceCardPage {
     private final WebDriverWait wait;
     private final JavascriptExecutor js;
 
-    private String lastServiceDate; // Örn: 7.12.2025
-    private String lastServiceTime; // Örn: 22:35
+    private String lastServiceDate;
+    private String lastServiceTime;
 
     public TreatmentFinanceCardPage() {
         this.driver = DriverFactory.getDriver();
@@ -486,7 +486,6 @@ public class TreatmentFinanceCardPage {
         scrollIntoView(menuButton);
         safeClick(menuButton);
 
-        // dropdown’un açılmasını bekle
         wait.until(ExpectedConditions.visibilityOfElementLocated(actionsDropdownContainer));
 
         WebElement editItem = wait.until(

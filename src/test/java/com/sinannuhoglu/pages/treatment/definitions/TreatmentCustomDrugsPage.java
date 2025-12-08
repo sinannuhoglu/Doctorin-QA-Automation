@@ -27,39 +27,30 @@ public class TreatmentCustomDrugsPage {
 
     // ==================== LOCATORS ======================
 
-    // Toolbar -> Yeni Ekle
     private final By newCustomDrugButton = By.xpath(
             "//button[contains(@class,'e-btn')]" +
                     "[.//span[normalize-space()='Yeni Ekle'] or normalize-space()='Yeni Ekle']"
     );
 
-    // Toolbar -> Detaylı Arama (filter ikonu)
     private final By filterButton = By.cssSelector("div.e-toolbar-item.e-template#filter button");
 
-    // Detaylı Arama popup içi
     private final By detailedSearchClearButton = By.xpath("//button[normalize-space()='Temizle']");
     private final By detailedSearchApplyButton = By.xpath("//button[normalize-space()='Uygula']");
 
-    // Yeni Ekle / Düzenle popup form
     private final By customDrugDialogForm = By.cssSelector("form.e-data-form");
 
-    // Dialog overlay (Düzenle, Detaylı Arama vs.)
     private final By dialogOverlay = By.cssSelector("div.e-dlg-overlay");
 
-    // Grid
     private final By gridContent = By.cssSelector("div.e-gridcontent");
     private final By gridRows = By.cssSelector("#Grid_content_table tbody tr.e-row");
     private final By emptyRow = By.cssSelector("#Grid_content_table tbody tr.e-emptyrow");
 
-    // Toolbar arama alanı (Ara)
     private final By toolbarSearchContainer = By.cssSelector("div.e-toolbar-item.e-template#search");
 
     // ==================== STATE FIELDS ===================
 
-    // EDIT senaryosunda kullanılacak satır
     private WebElement preparedEditRow;
 
-    // Durum (Aktif/Pasif) senaryosu için seçili satır ve kimlik bilgileri
     private WebElement preparedStatusRow;
     private String preparedStatusBaseName;
     private String preparedStatusBarcode;
@@ -140,7 +131,6 @@ public class TreatmentCustomDrugsPage {
         );
     }
 
-    // Grid üzerinde, adı baseName ile başlayan ve barkodu eşleşen ilk satırı döndürür.
     private WebElement findRowByNameAndBarcodeOrNull(String baseName, String barcode) {
         waitForGridLoaded();
         List<WebElement> rows = driver.findElements(gridRows);
@@ -165,7 +155,6 @@ public class TreatmentCustomDrugsPage {
     public void goToCustomDrugs(String url) {
         driver.get(url);
 
-        // Sayfanın tam yüklenmesini bekle (farklı ortamlarda stabil olsun diye)
         try {
             wait.until(d -> ((JavascriptExecutor) d)
                     .executeScript("return document.readyState")
@@ -173,7 +162,6 @@ public class TreatmentCustomDrugsPage {
         } catch (TimeoutException ignored) {
         }
 
-        // Özel İlaçlar ekranının ana elementlerinden en az birinin gelmesini bekle
         WebDriverWait pageWait = new WebDriverWait(driver, Duration.ofSeconds(25));
         pageWait.until(ExpectedConditions.or(
                 ExpectedConditions.visibilityOfElementLocated(newCustomDrugButton),
@@ -185,7 +173,6 @@ public class TreatmentCustomDrugsPage {
     // ================= DETAYLI ARAMA ========================
 
     public void openDetailedSearch() {
-        // Olası overlay'lerin kaybolmasını bekle
         try {
             wait.until(ExpectedConditions.invisibilityOfElementLocated(dialogOverlay));
         } catch (TimeoutException ignored) {
