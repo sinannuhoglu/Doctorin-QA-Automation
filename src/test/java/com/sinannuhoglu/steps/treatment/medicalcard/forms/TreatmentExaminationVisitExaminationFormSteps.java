@@ -21,7 +21,7 @@ public class TreatmentExaminationVisitExaminationFormSteps {
     // ================= FORM AÇILIŞI =================
 
     @When("Muayene sayfasında ilk vizitin Muayene Formu penceresini açar")
-    public void muayene_sayfasinda_ilk_vizitin_muayene_formu_penceresini_acar() {
+    public void muayene_sayfasinda_ilk_vizitin_muayene_formu_penceresini_acar() throws InterruptedException {
         examinationFormPage.openFirstVisitExaminationForm();
     }
 

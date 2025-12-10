@@ -308,51 +308,119 @@ public class TreatmentExaminationVisitExaminationFormPage {
 
     // ================= AKIŞ METOTLARI =================
 
-    public void openFirstVisitExaminationForm() {
+    public void openFirstVisitExaminationForm() throws InterruptedException {
         LOGGER.info("[ExaminationForm] İlk vizitin Muayene Formu penceresi açılıyor...");
 
         waitVisible(visitsContainer);
 
         WebElement card = waitVisible(firstVisitCard);
+
         scrollIntoView(card);
 
         createdVisitNumberForExaminationForm = extractVisitNumberFromCard(card);
-        LOGGER.info("[ExaminationForm] Muayene Formu açılan vizit numarası: {}", createdVisitNumberForExaminationForm);
+
+        LOGGER.info("[ExaminationForm] Muayene Formu açılacak vizit numarası: {}", createdVisitNumberForExaminationForm);
+
+    // ************* ZORUNLU: VIZITI FORCE-SELECT ET *************
+
+        LOGGER.info("[ExaminationForm] Vizit yeniden seçiliyor (force select)...");
+
+        js.executeScript("arguments[0].click();", card);
+
+        // Vizitin gerçekten seçildiğini doğrula
+
+        wait.until(driver -> {
+            WebElement refreshed = driver.findElement(firstVisitCard);
+            String cls = refreshed.getAttribute("class");
+            assert cls != null;
+            return cls.contains("animate-highlight-border") || cls.contains("bg-primary");
+        });
+        LOGGER.info("[ExaminationForm] Vizit başarıyla seçildi.");
+
+    // ************* Formlar butonunu aç *************
 
         WebElement formsButton = card.findElement(visitFormsButtonInsideCard);
 
-        LOGGER.info("[ExaminationForm] Vizit içindeki Formlar butonuna tıklanıyor...");
-        try {
-            scrollIntoView(formsButton);
-            wait.until(ExpectedConditions.elementToBeClickable(formsButton)).click();
-        } catch (Exception e) {
-            LOGGER.warn("[ExaminationForm] Normal click başarısız, JS click denenecek. Hata: {}", e.getMessage());
-            js.executeScript("arguments[0].click();", formsButton);
-        }
+        LOGGER.info("[ExaminationForm] Formlar butonuna tıklanıyor...");
 
         try {
-            Thread.sleep(700);
-        } catch (InterruptedException ignored) {
+
+            scrollIntoView(formsButton);
+
+            wait.until(ExpectedConditions.elementToBeClickable(formsButton)).click();
+
+        } catch (Exception e) {
+
+            LOGGER.warn("[ExaminationForm] Normal click başarısız, JS click deniyor: {}", e.getMessage());
+
+            js.executeScript("arguments[0].click();", formsButton);
+
         }
+
+        Thread.sleep(700); // popup animasyon için
+
+    // ************* Popup elemanlarını bekle *************
 
         WebElement popupRoot = waitPresent(formsPopupRoot);
+
         scrollIntoView(popupRoot);
 
         waitPresent(formsPopupGrid);
 
-        LOGGER.info("[ExaminationForm] Pop-up içindeki Muayene Formu butonu bekleniyor...");
+    // ************* Muayene Formu butonuna geç *************
+
         WebElement muayeneFormButton = waitPresent(examinationFormButtonInPopup);
+
         scrollIntoView(muayeneFormButton);
 
-        try {
-            js.executeScript("arguments[0].click();", muayeneFormButton);
-        } catch (JavascriptException e) {
-            LOGGER.warn("[ExaminationForm] JS click hatası, fallback normal click denenecek. Hata: {}", e.getMessage());
-            muayeneFormButton.click();
+    // TIKLAMADAN ÖNCE VIZITI BİR KEZ DAHA KONTROL ET
+
+        LOGGER.info("[ExaminationForm] Muayene Formu açılmadan önce vizit seçimi doğrulanıyor...");
+
+        /*
+        if (!card.getAttribute("class").contains("selected")) {
+
+            LOGGER.warn("[ExaminationForm] Vizit seçimi kayboldu, yeniden seçiliyor...");
+
+            js.executeScript("arguments[0].click();", card);
+
+            wait.until(driver -> card.getAttribute("class").contains("selected"));
+
+        }
+        */
+
+        if (!card.getAttribute("class").contains("animate-highlight-border")) {
+            LOGGER.warn("[ExaminationForm] Vizit seçimi kayboldu, yeniden seçiliyor...");
+            js.executeScript("arguments[0].click();", card);
+
+            wait.until(driver -> {
+                WebElement refreshed = driver.findElement(firstVisitCard);
+                String cls = refreshed.getAttribute("class");
+                return cls.contains("animate-highlight-border") || cls.contains("bg-primary");
+            });
         }
 
+    // ************* Muayene Formu butonuna tıkla *************
+
+        LOGGER.info("[ExaminationForm] Muayene Formu butonuna tıklanıyor...");
+
+        try {
+
+            js.executeScript("arguments[0].click();", muayeneFormButton);
+
+        } catch (JavascriptException e) {
+
+            LOGGER.warn("[ExaminationForm] JS click hatası, fallback normal click. Hata: {}", e.getMessage());
+
+            muayeneFormButton.click();
+
+        }
+
+    // ************* Form açılana kadar bekle *************
+
         waitVisible(examinationFormRoot);
-        LOGGER.info("[ExaminationForm] Muayene Formu vizit içinde açıldı.");
+
+        LOGGER.info("[ExaminationForm] Muayene Formu doğru vizitte açıldı.");
     }
 
     // ---- Alan doldurma metotları ----
